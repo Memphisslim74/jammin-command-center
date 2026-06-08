@@ -1797,7 +1797,7 @@
 
         .payroll-controls {
             display: grid;
-            grid-template-columns: minmax(220px, 1.4fr) repeat(4, minmax(150px, 1fr));
+            grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(150px, 1fr));
             gap: 12px;
             align-items: end;
             margin-bottom: 20px;
@@ -2742,7 +2742,7 @@
 
         <div class="payroll-panel hidden" id="staffPayrollPanel">
             <h2>Staff Payroll View</h2>
-            <p class="payroll-subtitle">Select one staff member to review their show pay, submitted hours, and payroll total for the selected timeframe.</p>
+            <p class="payroll-subtitle">Select one staff member to review manually entered show pay totals and payroll totals for the selected timeframe.</p>
 
             <div class="payroll-controls">
                 <div class="field-block">
@@ -2770,11 +2770,6 @@
                         <option value="all">All Statuses</option>
                     </select>
                 </div>
-
-                <div class="field-block">
-                    <label for="payrollHourlyRate">Hourly Rate</label>
-                    <input type="number" id="payrollHourlyRate" placeholder="0.00" step="0.01" min="0" onchange="renderStaffPayrollView()" oninput="renderStaffPayrollView()">
-                </div>
             </div>
 
             <div class="payroll-actions">
@@ -2794,11 +2789,11 @@
                     <div class="payroll-mini-value" id="payrollTotalHours">0.00</div>
                 </div>
                 <div class="payroll-mini-card">
-                    <div class="payroll-mini-label">Show Pay</div>
+                    <div class="payroll-mini-label">Manual Show Pay</div>
                     <div class="payroll-mini-value" id="payrollShowPay">$0.00</div>
                 </div>
                 <div class="payroll-mini-card">
-                    <div class="payroll-mini-label">Total Owed</div>
+                    <div class="payroll-mini-label">Payroll Total</div>
                     <div class="payroll-mini-value" id="payrollTotalOwed">$0.00</div>
                 </div>
             </div>
@@ -2814,8 +2809,7 @@
                             <th>Staff Member</th>
                             <th>Details</th>
                             <th>Hours</th>
-                            <th>Rate</th>
-                            <th>Show Pay</th>
+                            <th>Manual Pay</th>
                             <th>Total</th>
                             <th>Status</th>
                         </tr>
@@ -4926,9 +4920,6 @@
             const startValue = document.getElementById('payrollStartDate')?.value;
             const endValue = document.getElementById('payrollEndDate')?.value;
             const statusFilter = document.getElementById('payrollStatusFilter')?.value || 'Approved';
-            const hourlyRate = Number(document.getElementById('payrollHourlyRate')?.value || 0);
-            const safeHourlyRate = Number.isFinite(hourlyRate) ? hourlyRate : 0;
-
             const startDate = startValue ? new Date(startValue + 'T00:00:00') : null;
             const endDate = endValue ? new Date(endValue + 'T23:59:59') : null;
 
@@ -4954,8 +4945,7 @@
 
             const totalHours = entries.reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
             const showPay = entries.reduce((sum, entry) => sum + Number(entry.show_pay || 0), 0);
-            const hourlyPay = totalHours * safeHourlyRate;
-            const totalOwed = showPay + hourlyPay;
+            const totalOwed = showPay;
 
             setTextIfExists('payrollEntryCount', entries.length);
             setTextIfExists('payrollTotalHours', totalHours.toFixed(2));
@@ -4988,9 +4978,8 @@
             wrap.classList.remove('hidden');
 
             body.innerHTML = entries.map(entry => {
-                const rowHourlyPay = Number(entry.hours || 0) * safeHourlyRate;
                 const rowShowPay = Number(entry.show_pay || 0);
-                const rowTotal = rowHourlyPay + rowShowPay;
+                const rowTotal = rowShowPay;
                 return `
                     <tr>
                         <td>${entry.date ? new Date(entry.date).toLocaleDateString() : '-'}</td>
@@ -4998,7 +4987,6 @@
                         <td>${entry.staff_name || getPayrollStaffDisplayNameByKey(selectedStaff)}</td>
                         <td>${entry.details || '-'}</td>
                         <td>${Number(entry.hours || 0).toFixed(2)}</td>
-                        <td>${entry.hours ? `$${safeHourlyRate.toFixed(2)}` : '-'}</td>
                         <td>${rowShowPay ? `$${rowShowPay.toFixed(2)}` : '-'}</td>
                         <td>$${rowTotal.toFixed(2)}</td>
                         <td class="status-${String(entry.status || 'Pending').toLowerCase()}">${entry.status || 'Pending'}</td>
