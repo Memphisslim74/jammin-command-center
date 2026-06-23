@@ -2493,6 +2493,16 @@
             }
         }
 
+
+        @media (hover: none), (pointer: coarse) {
+            .stat-card:hover,
+            button:hover,
+            .tab:hover {
+                transform: none !important;
+                box-shadow: none !important;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -3358,6 +3368,17 @@
             return getRole() === 'admin';
         }
 
+        function refreshAfterSubmit() {
+            // Keep the user experience fast: show success and clear forms first,
+            // then refresh tables/graphs shortly after in the background.
+            setTimeout(() => {
+                loadData().catch(error => {
+                    console.error('Background refresh failed:', error);
+                    showError('Saved, but the dashboard refresh failed: ' + error.message);
+                });
+            }, 250);
+        }
+
         function showAuthError(message) {
             const errorDiv = document.getElementById('authError');
             const errorText = document.getElementById('authErrorText');
@@ -3851,8 +3872,11 @@
 
                 renderTables();
                 updateStats();
-                populatePayrollStaffSelect();
-                renderStaffPayrollView();
+
+                if (canViewAll()) {
+                    populatePayrollStaffSelect();
+                    renderStaffPayrollView();
+                }
 
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -3905,7 +3929,7 @@
 
                 showSuccess('Commission added successfully!');
                 clearCommissionForm();
-                await loadData();
+                refreshAfterSubmit();
 
             } catch (error) {
                 console.error('Error adding commission:', error);
@@ -3971,7 +3995,7 @@
 
                 showSuccess('Show submitted successfully!');
                 clearShowForm();
-                await loadData();
+                refreshAfterSubmit();
 
             } catch (error) {
                 console.error('Error adding show:', error);
@@ -4028,7 +4052,7 @@
 
                 showSuccess('Manager hours submitted successfully!');
                 clearManagerHoursForm();
-                await loadData();
+                refreshAfterSubmit();
 
             } catch (error) {
                 console.error('Error adding manager hours:', error);
@@ -4085,7 +4109,7 @@
 
                 showSuccess('Equipment hours submitted successfully!');
                 clearEquipmentHoursForm();
-                await loadData();
+                refreshAfterSubmit();
 
             } catch (error) {
                 console.error('Error adding equipment hours:', error);
@@ -4153,7 +4177,7 @@
 
                 showSuccess('Equipment checkout request submitted successfully!');
                 clearEquipmentCheckoutForm();
-                await loadData();
+                refreshAfterSubmit();
 
             } catch (error) {
                 console.error('Error adding equipment checkout:', error);
@@ -4212,7 +4236,7 @@
 
                 showSuccess('Equipment repair report submitted successfully!');
                 clearEquipmentRepairForm();
-                await loadData();
+                refreshAfterSubmit();
 
             } catch (error) {
                 console.error('Error adding equipment repair:', error);
@@ -4336,7 +4360,7 @@
                 }
 
                 showSuccess(`${selected.length} item(s) ${status === 'Approved' ? 'approved' : 'denied'} successfully.`);
-                await loadData();
+                refreshAfterSubmit();
 
             } catch (error) {
                 console.error('Bulk approval error:', error);
@@ -4381,7 +4405,7 @@
                 if (error) throw error;
 
                 showSuccess('Entry approved!');
-                await loadData();
+                refreshAfterSubmit();
 
             } catch (error) {
                 console.error('Error approving entry:', error);
@@ -4419,7 +4443,7 @@
                 if (error) throw error;
 
                 showSuccess('Entry denied!');
-                await loadData();
+                refreshAfterSubmit();
 
             } catch (error) {
                 console.error('Error denying entry:', error);
@@ -4448,7 +4472,7 @@
                 if (error) throw error;
 
                 showSuccess('Entry deleted!');
-                await loadData();
+                refreshAfterSubmit();
 
             } catch (error) {
                 console.error('Error deleting entry:', error);
