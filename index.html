@@ -2503,6 +2503,49 @@
             }
         }
 
+
+        /* Show Entry layout fix: keeps End Time and Status from overlapping on tablets/mobile */
+        .show-entry-form .input-group {
+            grid-template-columns: repeat(2, minmax(260px, 1fr));
+            align-items: start;
+        }
+
+        .show-entry-form .time-group {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(220px, 1fr));
+            gap: 18px;
+        }
+
+        .show-entry-form .field-block,
+        .show-entry-form .money-input-wrap,
+        .show-entry-form input,
+        .show-entry-form select,
+        .show-entry-form textarea {
+            min-width: 0;
+            width: 100%;
+        }
+
+        .show-entry-form .field-block label {
+            white-space: normal;
+            line-height: 1.25;
+        }
+
+        .show-entry-form select#showStatus {
+            min-width: 220px;
+        }
+
+        @media (max-width: 900px) {
+            .show-entry-form .input-group,
+            .show-entry-form .time-group {
+                grid-template-columns: 1fr;
+            }
+
+            .show-entry-form select#showStatus {
+                min-width: 0;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -2869,7 +2912,7 @@
         </div>
 
         <!-- Show Entry Form -->
-        <div class="controls hidden" id="showForm">
+        <div class="controls hidden show-entry-form" id="showForm">
             <h2>Add Show Entry</h2>
             <div class="input-group">
                 <div class="field-block">
