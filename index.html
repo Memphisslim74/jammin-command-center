@@ -2594,7 +2594,8 @@
                 <div class="top-card-title">Navigation</div>
                 <div class="dashboard-intro">Quick access to entries, approvals, users, and profile tools.</div>
                 <div class="tabs">
-                    <div class="tab active" onclick="switchTab('commissions')">💰 Commissions</div>
+                    <div class="tab active" onclick="switchTab('dashboard')">🏠 Dashboard</div>
+                    <div class="tab" onclick="switchTab('commissions')">💰 Commissions</div>
                     <div class="tab" onclick="switchTab('profile')">👤 My Profile</div>
                     <div class="tab" onclick="switchTab('shows')">🎤 Shows</div>
                     <div class="tab" onclick="switchTab('managerHours')">🕒 Manager Hours</div>
@@ -2627,7 +2628,7 @@
 
         <div class="dashboard-chart-card" id="submissionChartCard">
             <h2>Submission Breakdown</h2>
-            <p class="chart-subtitle">A quick visual summary of submissions currently visible to this account.</p>
+            <p class="chart-subtitle">Home dashboard summary of submissions currently visible to this account.</p>
             <div class="chart-layout">
                 <div class="pie-chart-wrap">
                     <svg id="submissionPieChart" viewBox="0 0 220 220" role="img" aria-label="Submission breakdown pie chart"></svg>
@@ -2850,7 +2851,7 @@
         </div>
 
         <!-- Commission Entry Form -->
-        <div class="controls" id="commissionForm">
+        <div class="controls hidden" id="commissionForm">
             <h2>Add Commission Entry</h2>
             <div class="input-group">
                 <input type="date" id="commissionDate" placeholder="Date">
@@ -4506,8 +4507,12 @@
             document.getElementById('usersTable').classList.add('hidden');
             document.getElementById('emailSettingsPanel').classList.add('hidden');
             document.getElementById('staffPayrollPanel').classList.add('hidden');
+            const submissionChartCard = document.getElementById('submissionChartCard');
+            if (submissionChartCard) submissionChartCard.classList.add('hidden');
 
-            if (tab === 'profile') {
+            if (tab === 'dashboard') {
+                if (submissionChartCard) submissionChartCard.classList.remove('hidden');
+            } else if (tab === 'profile') {
                 document.getElementById('profileForm').classList.remove('hidden');
             } else if (tab === 'commissions') {
                 document.getElementById('commissionForm').classList.remove('hidden');
