@@ -1,0 +1,67 @@
+name: Finalize DJ training integration
+
+on:
+  push:
+    branches:
+      - agent/dj-training-foundation
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/dj-training-foundation
+          fetch-depth: 0
+
+      - name: Apply final production fixes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          js_path = Path('dj-training.js')
+          js = js_path.read_text()
+          js = js.replace(
+              "${canSignTraining() && progress.isComplete ? `<button type=\"button\" id=\"sendTrainingCompletionBtn\" onclick=\"window.JamminTraining.sendCompletion('${userId}')\">Email Completion to DJ & Managers</button>` : ''}",
+              "${canSignTraining() && profile.id !== currentId() && progress.isComplete ? `<button type=\"button\" id=\"sendTrainingCompletionBtn\" onclick=\"window.JamminTraining.sendCompletion('${userId}')\">Email Completion to DJ & Managers</button>` : ''}"
+          )
+          js = js.replace(
+              "const printWindow = window.open('', '_blank', 'noopener,noreferrer');",
+              "const printWindow = window.open('', '_blank');"
+          )
+          js = js.replace(
+              "if (document.getElementById('djTrainingLaunchButton') && trainingState.cardsPatched) {",
+              "if (document.getElementById('djTrainingLaunchButton') && trainingState.cardsPatched && currentId() && typeof currentProfile !== 'undefined' && currentProfile) {"
+          )
+          js_path.write_text(js)
+
+          fn_path = Path('supabase/functions/notify-training-completion/index.ts')
+          fn = fn_path.read_text()
+          fn = fn.replace(
+              '.select("email")\n      .eq("role", "manager")\n      .eq("status", "active");',
+              '.select("email, status")\n      .eq("role", "manager");'
+          )
+          fn = fn.replace(
+              'let managerRecipients = [...new Set((managers || []).map((item) => item.email).filter(Boolean))] as string[];',
+              'let managerRecipients = [...new Set((managers || []).filter((item) => (item.status || "active") === "active").map((item) => item.email).filter(Boolean))] as string[];'
+          )
+          fn_path.write_text(fn)
+          PY
+
+      - name: Validate and commit
+        shell: bash
+        run: |
+          node --check dj-training.js
+          if git diff --quiet -- dj-training.js supabase/functions/notify-training-completion/index.ts; then
+            echo "Final production fixes already applied."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dj-training.js supabase/functions/notify-training-completion/index.ts
+          git commit -m "Finalize DJ training production behavior"
+          git push origin HEAD:agent/dj-training-foundation
