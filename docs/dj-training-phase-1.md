@@ -1,95 +1,55 @@
-# DJ Training Sprint — Phase 1 Foundation
+# JAMMIN Command Center — DJ Training Feature
 
-This phase establishes the database and permission model for DJ profiles and training sign-off. It does not change the live Command Center interface yet.
+## Included in this release
 
-## Included
+- DJ training roster inside People & Access
+- Search and status filters for administrators and managers
+- Individual DJ training profiles with contact information
+- Required training categories:
+  - Trivia Nights
+  - Feud
+  - Music Bingo
+  - Weddings
+  - Karaoke
+  - Mitzvahs
+  - Corporate Events
+  - School Dances
+  - Google Classroom
+- Optional named Other Event Type records
+- Completion dates and verified signer names
+- Manager sign-off with self-approval prevention
+- Administrator-only Google Classroom sign-off
+- Audit history for completed, reopened, and updated records
+- Individual DJ training PDF/print view for administrators
+- Full training roster PDF/print view for administrators
+- Training-completion email to the DJ with management copied
+- DJ self-service My Training view
 
-- Configurable `training_categories` table.
-- Per-DJ `staff_training` records.
-- Append-only `training_history` audit records created by database triggers.
-- Completion date, completion timestamp, signer user ID, and historical signer name.
-- Support for multiple named **Other Event Type** records.
-- Row-level security for administrators, managers, and DJs.
-- Initial JAMMIN training categories.
+## Production deployment
 
-## Initial category settings
+The frontend deploys automatically through Cloudflare Pages when changes reach `main`.
 
-The working defaults mark these as required:
+The Supabase portion requires:
 
-- Trivia Nights
-- Feud
-- Music Bingo
-- Weddings
-- Karaoke
-- Mitzvahs
-- Corporate Events
-- School Dances
-- Google Classroom
+1. Run `supabase/migrations/20260725_dj_training_foundation.sql`.
+2. Run `supabase/migrations/20260725_dj_training_notifications.sql`.
+3. Deploy `supabase/functions/notify-training-completion`.
+4. Confirm the function has these secrets:
+   - `SUPABASE_URL` or `PROJECT_URL`
+   - `SUPABASE_ANON_KEY`, `SUPABASE_PUBLISHABLE_KEY`, or `PROJECT_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEY`, or `PROJECT_SERVICE_ROLE_KEY`
+   - `RESEND_API_KEY`
+   - Optional: `COMMAND_CENTER_URL`
 
-**Other Event Type** is optional and requires a meaningful custom label.
+## Permission model
 
-Google Classroom is configured as administrator-only sign-off so Lindsay or another administrator can verify it. Managers may sign off on the other active categories for another person, but may not approve their own training.
+- Administrators can view and manage all DJ training.
+- Managers can view all DJ training and sign off another person's non-administrator-only training.
+- Managers cannot sign off their own records.
+- Standard users can only view their own training records and history.
+- Google Classroom requires administrator sign-off.
+- Only administrators can print the roster and individual profile reports.
 
-These defaults are configurable and can be changed after John confirms whether requirements vary by role or market.
+## Current requirement defaults
 
-## Deployment
-
-Run this file in the Supabase SQL Editor against a non-production environment first:
-
-```text
-supabase/migrations/20260725_dj_training_foundation.sql
-```
-
-The migration is transactional. If a statement fails, PostgreSQL should roll back the migration rather than leave a partially created training system.
-
-## Permission validation
-
-Test with three separate accounts.
-
-### Administrator
-
-- Can read all training categories, including inactive categories.
-- Can create, update, reopen, and correct any training record.
-- Can sign off Google Classroom.
-- Can manage the category configuration.
-- Can read all training history.
-
-### Manager
-
-- Can read all DJ training and history.
-- Can mark training complete for another user.
-- Cannot approve their own training.
-- Cannot sign off Google Classroom.
-- Cannot rewrite the original signer on an already completed record.
-- Cannot delete training records or manage categories.
-
-### Standard user / DJ
-
-- Can read active training categories.
-- Can read only their own training and training history.
-- Cannot insert, update, complete, reopen, or delete training records.
-
-## Data validation
-
-Confirm that a completed training record stores:
-
-- `status = complete`
-- `completion_date`
-- `completed_at`
-- `completed_by_user_id`
-- `completed_by_name`
-
-Confirm that every insert or update creates a matching row in `training_history` with the action `created`, `completed`, `reopened`, or `updated`.
-
-## Not included in Phase 1
-
-- DJ profile interface.
-- Training checklist controls.
-- Roster or individual-profile PDF exports.
-- Completion email and Resend logging.
-- Role- or market-specific required-training assignments.
-- Training expiration and retraining dates.
-
-## Next implementation step
-
-Build the DJ profile modal/page inside **People & Access**, load the active category list, join it to each DJ's training records, and expose sign-off controls according to the database permissions above.
+All core categories are required. Other Event Type is optional. Administrators can change category requirements later in Supabase if JAMMIN adopts role-specific or market-specific requirements.
