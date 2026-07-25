@@ -1,0 +1,46 @@
+name: Integrate DJ training UI
+
+on:
+  push:
+    branches:
+      - agent/dj-training-foundation
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/dj-training-foundation
+          fetch-depth: 0
+
+      - name: Build training asset and connect it to the app
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d dj-training.js.gz.b64 | gzip -d > dj-training.js
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('index.html')
+          text = path.read_text()
+          marker = '<script src="dj-training.js"></script>'
+          if marker not in text:
+              text = text.replace('</body>', f'    {marker}\n</body>', 1)
+              path.write_text(text)
+          PY
+
+      - name: Commit generated integration
+        shell: bash
+        run: |
+          if git diff --quiet -- index.html dj-training.js; then
+            echo "DJ training UI is already integrated."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html dj-training.js
+          git commit -m "Integrate DJ training interface"
+          git push origin HEAD:agent/dj-training-foundation
