@@ -91,9 +91,7 @@
                 box-shadow: 0 8px 22px rgba(190,30,135,.22) !important;
             }
 
-            .top-card .export-buttons {
-                margin: 0 !important;
-            }
+            .top-card .export-buttons { margin: 0 !important; }
 
             .top-card .date-range {
                 width: 100% !important;
@@ -144,87 +142,106 @@
                 box-shadow: none !important;
             }
 
-            .top-card .date-range button:last-child {
-                grid-column: 1 / -1 !important;
-            }
+            .top-card .date-range button:last-child { grid-column: 1 / -1 !important; }
 
             @media (max-width: 1360px) {
-                .top-layout {
-                    grid-template-columns: 1fr !important;
-                }
-
-                .top-card .tabs {
-                    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
-                }
-
+                .top-layout { grid-template-columns: 1fr !important; }
+                .top-card .tabs { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; }
                 .top-layout > .top-card:last-child .date-range {
                     grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
                     align-items: end !important;
                 }
-
-                .top-layout > .top-card:last-child .date-range .small-muted {
-                    grid-column: 1 / -1 !important;
-                }
-
-                .top-layout > .top-card:last-child .date-range button:last-child {
-                    grid-column: auto !important;
-                }
+                .top-layout > .top-card:last-child .date-range .small-muted { grid-column: 1 / -1 !important; }
+                .top-layout > .top-card:last-child .date-range button:last-child { grid-column: auto !important; }
             }
 
             @media (max-width: 980px) {
-                .top-card .tabs {
-                    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-                }
-
-                .top-layout > .top-card:last-child .date-range {
-                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                }
-
-                .top-layout > .top-card:last-child .date-range button:last-child {
-                    grid-column: 1 / -1 !important;
-                }
+                .top-card .tabs { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+                .top-layout > .top-card:last-child .date-range { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+                .top-layout > .top-card:last-child .date-range button:last-child { grid-column: 1 / -1 !important; }
             }
 
             @media (max-width: 640px) {
-                .top-layout {
-                    gap: 12px !important;
-                    margin-bottom: 18px !important;
-                }
-
-                .top-layout > .top-card {
-                    padding: 15px !important;
-                    border-radius: 12px !important;
-                }
-
-                .top-card .tabs {
-                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                    gap: 8px !important;
-                }
-
+                .top-layout { gap: 12px !important; margin-bottom: 18px !important; }
+                .top-layout > .top-card { padding: 15px !important; border-radius: 12px !important; }
+                .top-card .tabs { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important; }
                 .top-card .tab,
-                .top-card .training-launch-btn {
-                    min-height: 54px !important;
-                    font-size: .78rem !important;
-                }
+                .top-card .training-launch-btn { min-height: 54px !important; font-size: .78rem !important; }
             }
 
             @media (max-width: 350px) {
                 .top-card .tabs,
                 .top-card .date-range,
-                .top-layout > .top-card:last-child .date-range {
-                    grid-template-columns: 1fr !important;
-                }
-
-                .top-card .date-range button:last-child {
-                    grid-column: 1 !important;
-                }
+                .top-layout > .top-card:last-child .date-range { grid-template-columns: 1fr !important; }
+                .top-card .date-range button:last-child { grid-column: 1 !important; }
             }
 
             /* =========================================================
-               COMPACT STAFF CARDS + DESTRUCTIVE ACTION LAST
+               COMPACT STAFF CARDS + TRAINING STATUS
                ========================================================= */
-            .user-card-details {
-                gap: 9px !important;
+            .user-card-details { gap: 9px !important; }
+
+            .training-progress-detail {
+                grid-column: 1 / -1 !important;
+                padding: 13px 14px !important;
+                border: 1px solid rgba(245,158,11,.24) !important;
+                background: linear-gradient(135deg, rgba(245,158,11,.075), rgba(255,255,255,.025)) !important;
+            }
+
+            .training-progress-detail.training-status-complete {
+                border-color: rgba(16,185,129,.38) !important;
+                background: linear-gradient(135deg, rgba(16,185,129,.14), rgba(16,185,129,.045)) !important;
+                box-shadow: inset 3px 0 0 rgba(16,185,129,.72);
+            }
+
+            .training-status-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                margin-bottom: 5px;
+            }
+
+            .training-status-title {
+                color: #f5f1f7;
+                font-size: .86rem;
+                font-weight: 800;
+            }
+
+            .training-status-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                padding: 4px 8px;
+                border-radius: 999px;
+                font-size: .66rem;
+                line-height: 1;
+                font-weight: 850;
+                letter-spacing: .05em;
+                text-transform: uppercase;
+                white-space: nowrap;
+            }
+
+            .training-status-badge.complete {
+                color: #8cf0c6;
+                background: rgba(16,185,129,.15);
+                border: 1px solid rgba(16,185,129,.38);
+            }
+
+            .training-status-badge.incomplete {
+                color: #fcd38d;
+                background: rgba(245,158,11,.13);
+                border: 1px solid rgba(245,158,11,.3);
+            }
+
+            .training-status-copy {
+                color: #bcb2c2;
+                font-size: .78rem;
+                line-height: 1.35;
+            }
+
+            .training-progress-detail.training-status-complete .training-progress-fill {
+                background: linear-gradient(90deg, #10b981, #34d399) !important;
             }
 
             .user-card-actions {
@@ -288,51 +305,69 @@
             }
 
             @media (max-width: 520px) {
-                .user-card-main {
-                    padding: 15px !important;
-                }
-
+                .user-card-main { padding: 15px !important; }
                 .user-card-details {
                     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                     gap: 8px !important;
                     margin-top: 13px !important;
                 }
-
-                .user-detail {
-                    min-width: 0;
-                    padding: 9px 10px !important;
-                }
-
-                .user-detail-value {
-                    overflow-wrap: anywhere;
-                }
-
-                .training-progress-detail {
-                    grid-column: 1 / -1 !important;
-                }
-
+                .user-detail { min-width: 0; padding: 9px 10px !important; }
+                .user-detail-value { overflow-wrap: anywhere; }
+                .training-progress-detail { grid-column: 1 / -1 !important; }
                 .user-card-actions {
                     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                     padding: 11px 14px 15px !important;
                 }
-
-                .user-card-actions .password-reset-panel {
-                    grid-template-columns: 1fr !important;
-                }
+                .user-card-actions .password-reset-panel { grid-template-columns: 1fr !important; }
             }
 
             @media (max-width: 370px) {
-                .user-card-details {
-                    grid-template-columns: 1fr !important;
-                }
-
-                .training-progress-detail {
-                    grid-column: 1 !important;
-                }
+                .user-card-details { grid-template-columns: 1fr !important; }
+                .training-progress-detail { grid-column: 1 !important; }
             }
         `;
 
         document.head.appendChild(style);
+    }
+
+    function enhanceTrainingStatus() {
+        document.querySelectorAll('.training-progress-detail').forEach((detail) => {
+            const value = detail.querySelector('.user-detail-value');
+            const source = value?.textContent || detail.textContent || '';
+            const match = source.match(/(\d+)\s+of\s+(\d+)\s+required items complete/i);
+            if (!match) return;
+
+            const completed = Number(match[1]);
+            const total = Number(match[2]);
+            const isComplete = total > 0 && completed === total;
+            const statusKey = `${completed}:${total}`;
+
+            if (detail.dataset.trainingStatusKey === statusKey) return;
+            detail.dataset.trainingStatusKey = statusKey;
+            detail.classList.toggle('training-status-complete', isComplete);
+
+            detail.innerHTML = `
+                <div class="training-status-header">
+                    <span class="training-status-title">DJ Training</span>
+                    <span class="training-status-badge ${isComplete ? 'complete' : 'incomplete'}">
+                        ${isComplete ? '✓ Training Complete' : 'Training In Progress'}
+                    </span>
+                </div>
+                <div class="training-status-copy">
+                    ${isComplete
+                        ? `All ${total} required training items are verified. An administrator can reopen any item if retraining is required.`
+                        : `${completed} of ${total} required training items are complete.`}
+                </div>
+                <div class="training-progress-track">
+                    <div class="training-progress-fill" style="width:${total ? Math.round((completed / total) * 100) : 0}%"></div>
+                </div>`;
+        });
+
+        document.querySelectorAll('.training-card-actions').forEach((actions) => {
+            const buttons = actions.querySelectorAll('button');
+            if (buttons[0]) buttons[0].textContent = 'Manage Training';
+            if (buttons[1]) buttons[1].textContent = 'Training PDF';
+        });
     }
 
     function normalizeStaffCardActions() {
@@ -345,7 +380,7 @@
             }
 
             const resetPanel = actions.querySelector('.password-reset-panel');
-            if (resetPanel && trainingActions && resetPanel.compareDocumentPosition(trainingActions) & Node.DOCUMENT_POSITION_PRECEDING) {
+            if (resetPanel && trainingActions && (resetPanel.compareDocumentPosition(trainingActions) & Node.DOCUMENT_POSITION_PRECEDING)) {
                 actions.insertBefore(resetPanel, trainingActions);
             }
         });
@@ -354,12 +389,19 @@
     function refreshLayout() {
         injectStaffCardLayoutStyles();
         normalizeStaffCardActions();
+        enhanceTrainingStatus();
     }
 
     document.addEventListener('DOMContentLoaded', refreshLayout);
 
+    let refreshQueued = false;
     const observer = new MutationObserver(() => {
-        window.requestAnimationFrame(refreshLayout);
+        if (refreshQueued) return;
+        refreshQueued = true;
+        window.requestAnimationFrame(() => {
+            refreshQueued = false;
+            refreshLayout();
+        });
     });
 
     observer.observe(document.documentElement, {
