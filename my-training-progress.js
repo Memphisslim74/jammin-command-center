@@ -9,6 +9,8 @@
         wrappersInstalled: false
     };
 
+    const GOOGLE_CLASSROOM_URL = 'https://classroom.google.com/u/5/w/NzQyMTEyMzE1NDgz/t/all';
+
     const esc = (value) => String(value ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -174,10 +176,31 @@
                 gap: 9px;
             }
 
-            .my-training-actions button {
+            .my-training-actions button,
+            .my-training-actions a {
                 min-height: 41px;
                 margin: 0;
                 padding: 9px 14px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+                font-weight: 750;
+                text-decoration: none;
+            }
+
+            .my-training-classroom-btn {
+                color: #f8edf4;
+                background: rgba(255,255,255,.055);
+                border: 1px solid rgba(233,30,140,.30);
+                transition: background .18s ease, border-color .18s ease, transform .18s ease;
+            }
+
+            .my-training-classroom-btn:hover {
+                color: #fff;
+                background: rgba(233,30,140,.13);
+                border-color: rgba(233,30,140,.52);
+                transform: translateY(-1px);
             }
 
             .my-training-loading,
@@ -193,7 +216,7 @@
                 .my-training-panel { padding: 16px; }
                 .my-training-header { flex-direction: column; gap: 10px; }
                 .my-training-missing-list { grid-template-columns: 1fr; }
-                .my-training-actions button { width: 100%; }
+                .my-training-actions button, .my-training-actions a { width: 100%; }
             }
         `;
         document.head.appendChild(style);
@@ -280,6 +303,7 @@
 
             <div class="my-training-actions">
                 <button type="button" id="viewMyTrainingBtn">View My Training Record</button>
+                <a class="my-training-classroom-btn" href="${GOOGLE_CLASSROOM_URL}" target="_blank" rel="noopener noreferrer">Open Google Classroom ↗</a>
             </div>`;
 
         panel.querySelector('#viewMyTrainingBtn')?.addEventListener('click', showTrainingRecord);

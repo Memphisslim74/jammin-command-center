@@ -273,8 +273,8 @@
                     <div id="trainingTypeList" class="training-type-list"></div>
                 </div>
                 <footer class="training-type-footer">
-                    <button type="button" class="btn-secondary" id="cancelTrainingTypeBtn">Cancel</button>
-                    <button type="button" id="saveTrainingTypeBtn">Save Changes</button>
+                    <button type="button" class="btn-secondary" id="cancelTrainingTypeBtn">Close</button>
+                    <button type="button" id="saveTrainingTypeBtn">Save Changes & Keep Editing</button>
                 </footer>
             </section>`;
 
@@ -477,11 +477,11 @@
             const failure = results.find((result) => result.error);
             if (failure?.error) throw failure.error;
 
-            showSuccessMessage('Training types updated successfully.');
+            showSuccessMessage('Training types saved. You can continue adding or editing types.');
             await loadTrainingTypes();
             if (window.JamminTraining?.refresh) await window.JamminTraining.refresh();
+            if (window.JamminMyTrainingProgress?.refresh) await window.JamminMyTrainingProgress.refresh(true);
             if (typeof renderUserCards === 'function') renderUserCards();
-            document.getElementById('trainingTypeOverlay')?.classList.add('hidden');
         } catch (error) {
             console.error('Training type save error:', error);
             showErrorMessage('Failed to save training types: ' + (error?.message || error));
