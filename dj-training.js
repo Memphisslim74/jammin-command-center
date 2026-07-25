@@ -379,7 +379,7 @@
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:8px">
                     ${isAdmin() ? `<button type="button" class="btn-secondary" onclick="window.JamminTraining.printProfile('${userId}')">Save Training Profile as PDF</button>` : ''}
-                    ${canSignTraining() && profile.id !== currentId() && progress.isComplete ? `<button type="button" id="sendTrainingCompletionBtn" onclick="window.JamminTraining.sendCompletion('${userId}')">Email Completion to DJ & Managers</button>` : ''}
+                    ${canSignTraining() && (isAdmin() || profile.id !== currentId()) && progress.isComplete ? `<button type="button" id="sendTrainingCompletionBtn" onclick="window.JamminTraining.sendCompletion('${userId}')">Email Completion to DJ & Managers</button>` : ''}
                 </div>
             </div>
             <div class="training-list">
@@ -393,7 +393,7 @@
     function trainingRow(profile, category, record, customLabel = '') {
         const complete = record?.status === 'complete';
         const managerBlocked = isManager() && category.admin_only_signoff;
-        const canEdit = canSignTraining() && profile.id !== currentId() && !managerBlocked;
+        const canEdit = canSignTraining() && (isAdmin() || profile.id !== currentId()) && !managerBlocked;
         const dateValue = record?.completion_date || today();
         const title = customLabel || category.name;
         return `
@@ -425,7 +425,7 @@
             <div style="margin-top:8px">
                 <h3 style="color:#e91e8c;margin:8px 0 10px">Other Event Type</h3>
                 ${records.map(record => trainingRow(profile, category, record, record.custom_label)).join('') || '<div class="training-muted" style="padding:10px 0">No additional event-type training has been recorded.</div>'}
-                ${canSignTraining() && profile.id !== currentId() ? `
+                ${canSignTraining() && (isAdmin() || profile.id !== currentId()) ? `
                     <div class="training-add-other">
                         <input type="text" id="otherTrainingLabel" placeholder="Event type, such as Casino Night">
                         <input type="date" id="otherTrainingDate" value="${today()}">
