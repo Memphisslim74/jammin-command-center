@@ -1819,9 +1819,39 @@
 
         .payroll-summary-grid {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 12px;
             margin-bottom: 20px;
+        }
+
+        .payroll-rate-editor {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .payroll-rate-editor input {
+            width: 88px;
+            min-height: 34px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(233, 30, 140, 0.45);
+            background: rgba(22, 15, 33, 0.82);
+            color: #fff;
+        }
+
+        .payroll-rate-editor button {
+            min-height: 34px;
+            padding: 6px 10px;
+            border-radius: 6px;
+        }
+
+        .payroll-rate-missing {
+            color: #fbbf24;
+            font-size: 0.78em;
+            display: block;
+            margin-top: 4px;
         }
 
         .payroll-mini-card {
@@ -2886,13 +2916,13 @@
 
         <div class="payroll-panel hidden" id="staffPayrollPanel">
             <h2>Staff Payroll View</h2>
-            <p class="payroll-subtitle">Select one staff member to review manually entered show pay totals and payroll totals for the selected timeframe.</p>
+            <p class="payroll-subtitle">Review all submitted payroll entries for the selected date range. Pending entries are included by default so Accounting can see the current payroll before approvals are complete.</p>
 
             <div class="payroll-controls">
                 <div class="field-block">
                     <label for="payrollStaffSelect">Staff Member</label>
                     <select id="payrollStaffSelect" onchange="renderStaffPayrollView()">
-                        <option value="">Select staff member</option>
+                        <option value="all" selected>All Staff</option>
                     </select>
                 </div>
 
@@ -2909,9 +2939,10 @@
                 <div class="field-block">
                     <label for="payrollStatusFilter">Status</label>
                     <select id="payrollStatusFilter" onchange="renderStaffPayrollView()">
-                        <option value="Approved" selected>Approved Only</option>
+                        <option value="all" selected>All Statuses</option>
                         <option value="Pending">Pending Only</option>
-                        <option value="all">All Statuses</option>
+                        <option value="Approved">Approved Only</option>
+                        <option value="Denied">Denied Only</option>
                     </select>
                 </div>
             </div>
@@ -2920,6 +2951,7 @@
                 <button type="button" class="btn-secondary" onclick="setPayrollRange('14')">Last 14 Days</button>
                 <button type="button" class="btn-secondary" onclick="setPayrollRange('30')">Last 30 Days</button>
                 <button type="button" onclick="renderStaffPayrollView()">Apply Filter</button>
+                <button type="button" class="btn-secondary" onclick="exportStaffPayrollCSV()">Export Payroll CSV</button>
                 <button type="button" class="btn-secondary" onclick="printStaffPayroll()">Print Payroll View</button>
             </div>
 
@@ -2933,8 +2965,12 @@
                     <div class="payroll-mini-value" id="payrollTotalHours">0.00</div>
                 </div>
                 <div class="payroll-mini-card">
-                    <div class="payroll-mini-label">Manual Show Pay</div>
+                    <div class="payroll-mini-label">Show Pay</div>
                     <div class="payroll-mini-value" id="payrollShowPay">$0.00</div>
+                </div>
+                <div class="payroll-mini-card">
+                    <div class="payroll-mini-label">Hourly Pay</div>
+                    <div class="payroll-mini-value" id="payrollHourlyPay">$0.00</div>
                 </div>
                 <div class="payroll-mini-card">
                     <div class="payroll-mini-label">Payroll Total</div>
@@ -2953,7 +2989,8 @@
                             <th>Staff Member</th>
                             <th>Details</th>
                             <th>Hours</th>
-                            <th>Manual Pay</th>
+                            <th>Hourly Wage</th>
+                            <th>Show Pay</th>
                             <th>Total</th>
                             <th>Status</th>
                         </tr>
@@ -3058,15 +3095,37 @@
         <div class="controls hidden" id="managerHoursForm">
             <h2>Add Manager Hours</h2>
             <div class="input-group">
-                <input type="date" id="managerDate" placeholder="Date">
-                <input type="text" id="managerName" placeholder="Manager Name">
-                <input type="number" id="managerHours" placeholder="Hours Worked" step="0.25" min="0">
-                <input type="text" id="managerEventName" placeholder="Event / Assignment">
-                <select id="managerStatus">
-                    <option value="Pending">Pending Review</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Denied">Denied</option>
-                </select>
+                <div class="field-block">
+                    <label for="managerDate">Date</label>
+                    <input type="date" id="managerDate">
+                </div>
+                <div class="field-block">
+                    <label for="managerName">Manager Name</label>
+                    <input type="text" id="managerName" placeholder="Manager Name">
+                </div>
+                <div class="field-block">
+                    <label for="managerHours">Hours Worked</label>
+                    <input type="number" id="managerHours" placeholder="0.00" step="0.25" min="0">
+                </div>
+                <div class="field-block">
+                    <label for="managerHourlyRate">Hourly Wage</label>
+                    <div class="money-input-wrap">
+                        <span>$</span>
+                        <input type="number" id="managerHourlyRate" placeholder="0.00" step="0.01" min="0">
+                    </div>
+                </div>
+                <div class="field-block">
+                    <label for="managerEventName">Event / Assignment</label>
+                    <input type="text" id="managerEventName" placeholder="Event / Assignment">
+                </div>
+                <div class="field-block">
+                    <label for="managerStatus">Status</label>
+                    <select id="managerStatus">
+                        <option value="Pending">Pending Review</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Denied">Denied</option>
+                    </select>
+                </div>
             </div>
             <textarea id="managerNotes" placeholder="Notes (optional)" class="input-group"></textarea>
             <button type="button" onclick="addManagerHours()" id="submitManagerHoursBtn">Submit Manager Hours</button>
@@ -3074,21 +3133,46 @@
 
         <!-- Equipment Hours Entry Form -->
         <div class="controls hidden" id="equipmentHoursForm">
-            <h2>Add Equipment Hours</h2>
+            <h2>Add Equipment / Storage Hours</h2>
             <div class="input-group">
-                <input type="date" id="equipmentDate" placeholder="Date">
-                <input type="text" id="equipmentUserName" placeholder="Submitted By">
-                <input type="text" id="equipmentName" placeholder="Equipment / System">
-                <input type="number" id="equipmentHours" placeholder="Hours Used" step="0.25" min="0">
-                <input type="text" id="equipmentEventName" placeholder="Event / Use Case">
-                <select id="equipmentStatus">
-                    <option value="Pending">Pending Review</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Denied">Denied</option>
-                </select>
+                <div class="field-block">
+                    <label for="equipmentDate">Date</label>
+                    <input type="date" id="equipmentDate">
+                </div>
+                <div class="field-block">
+                    <label for="equipmentUserName">Submitted By</label>
+                    <input type="text" id="equipmentUserName" placeholder="Submitted By">
+                </div>
+                <div class="field-block">
+                    <label for="equipmentName">Equipment / Storage Work</label>
+                    <input type="text" id="equipmentName" placeholder="Equipment, storage, or system">
+                </div>
+                <div class="field-block">
+                    <label for="equipmentHours">Hours Worked</label>
+                    <input type="number" id="equipmentHours" placeholder="0.00" step="0.25" min="0">
+                </div>
+                <div class="field-block">
+                    <label for="equipmentHourlyRate">Hourly Wage</label>
+                    <div class="money-input-wrap">
+                        <span>$</span>
+                        <input type="number" id="equipmentHourlyRate" placeholder="0.00" step="0.01" min="0">
+                    </div>
+                </div>
+                <div class="field-block">
+                    <label for="equipmentEventName">Event / Use Case</label>
+                    <input type="text" id="equipmentEventName" placeholder="Event / Use Case">
+                </div>
+                <div class="field-block">
+                    <label for="equipmentStatus">Status</label>
+                    <select id="equipmentStatus">
+                        <option value="Pending">Pending Review</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Denied">Denied</option>
+                    </select>
+                </div>
             </div>
             <textarea id="equipmentNotes" placeholder="Notes (optional)" class="input-group"></textarea>
-            <button type="button" onclick="addEquipmentHours()" id="submitEquipmentHoursBtn">Submit Equipment Hours</button>
+            <button type="button" onclick="addEquipmentHours()" id="submitEquipmentHoursBtn">Submit Equipment / Storage Hours</button>
         </div>
 
 
@@ -3240,6 +3324,8 @@
                         <th>Manager</th>
                         <th>Event / Assignment</th>
                         <th>Hours</th>
+                        <th>Hourly Wage</th>
+                        <th>Total Pay</th>
                         <th>Status</th>
                         <th>Notes</th>
                         <th>Actions</th>
@@ -3261,6 +3347,8 @@
                         <th>Equipment</th>
                         <th>Event / Use Case</th>
                         <th>Hours</th>
+                        <th>Hourly Wage</th>
+                        <th>Total Pay</th>
                         <th>Status</th>
                         <th>Notes</th>
                         <th>Actions</th>
@@ -3352,7 +3440,7 @@
                 <div class="admin-user-form">
                     <input type="text" id="newUserFullName" placeholder="Full Name">
                     <input type="email" id="newUserEmail" placeholder="Email Address">
-                    <input type="password" id="newUserPassword" placeholder="Temporary Password" autocomplete="new-password">
+                    <input type="password" id="newUserPassword" placeholder="Initial Password" autocomplete="new-password">
                     <input type="tel" id="newUserPhone" placeholder="Phone Number">
                     <select id="newUserRole">
                         <option value="user">Standard User</option>
@@ -3361,7 +3449,7 @@
                     </select>
                 </div>
                 <button type="button" onclick="adminCreateUser()" id="createUserBtn">Add User</button>
-                <p class="danger-note">Use a temporary password. The user will receive a branded email with their login link and temporary password.</p>
+                <p class="danger-note">The user will receive a password-setup email. Share the initial password only through an approved secure channel if it is needed as a fallback.</p>
             </div>
 
             <div id="usersLoading" class="loading">Loading users</div>
@@ -4146,12 +4234,13 @@
             const date = document.getElementById('managerDate').value;
             const managerName = document.getElementById('managerName').value.trim();
             const hours = parseFloat(document.getElementById('managerHours').value);
+            const hourlyRate = parseFloat(document.getElementById('managerHourlyRate').value);
             const eventName = document.getElementById('managerEventName').value.trim();
             const status = canManageUsers() ? document.getElementById('managerStatus').value : 'Pending';
             const notes = document.getElementById('managerNotes').value.trim();
 
-            if (!date || !managerName || !document.getElementById('managerHours').value || !Number.isFinite(hours) || !eventName) {
-                alert('Please fill in all required fields');
+            if (!date || !managerName || !document.getElementById('managerHours').value || !Number.isFinite(hours) || hours < 0 || !document.getElementById('managerHourlyRate').value || !Number.isFinite(hourlyRate) || hourlyRate < 0 || !eventName) {
+                alert('Please fill in the date, manager, hours, hourly wage, and assignment.');
                 return;
             }
 
@@ -4167,6 +4256,7 @@
                         date,
                         manager_name: managerName,
                         hours,
+                        hourly_rate: hourlyRate,
                         event_name: eventName,
                         status,
                         notes
@@ -4179,7 +4269,7 @@
                     djName: managerName,
                     date,
                     details: eventName,
-                    amountOrTime: `${hours.toFixed(2)} hours`,
+                    amountOrTime: `${hours.toFixed(2)} hours • $${hourlyRate.toFixed(2)}/hr • $${(hours * hourlyRate).toFixed(2)}`,
                     status,
                     notes
                 });
@@ -4202,12 +4292,13 @@
             const submittedBy = document.getElementById('equipmentUserName').value.trim();
             const equipmentName = document.getElementById('equipmentName').value.trim();
             const hours = parseFloat(document.getElementById('equipmentHours').value);
+            const hourlyRate = parseFloat(document.getElementById('equipmentHourlyRate').value);
             const eventName = document.getElementById('equipmentEventName').value.trim();
             const status = canManageUsers() ? document.getElementById('equipmentStatus').value : 'Pending';
             const notes = document.getElementById('equipmentNotes').value.trim();
 
-            if (!date || !submittedBy || !equipmentName || !document.getElementById('equipmentHours').value || !Number.isFinite(hours) || !eventName) {
-                alert('Please fill in all required fields');
+            if (!date || !submittedBy || !equipmentName || !document.getElementById('equipmentHours').value || !Number.isFinite(hours) || hours < 0 || !document.getElementById('equipmentHourlyRate').value || !Number.isFinite(hourlyRate) || hourlyRate < 0 || !eventName) {
+                alert('Please fill in the date, name, equipment/storage work, hours, hourly wage, and event/use case.');
                 return;
             }
 
@@ -4224,6 +4315,7 @@
                         submitted_by: submittedBy,
                         equipment_name: equipmentName,
                         hours,
+                        hourly_rate: hourlyRate,
                         event_name: eventName,
                         status,
                         notes
@@ -4236,7 +4328,7 @@
                     djName: submittedBy,
                     date,
                     details: `${equipmentName} - ${eventName}`,
-                    amountOrTime: `${hours.toFixed(2)} hours`,
+                    amountOrTime: `${hours.toFixed(2)} hours • $${hourlyRate.toFixed(2)}/hr • $${(hours * hourlyRate).toFixed(2)}`,
                     status,
                     notes
                 });
@@ -4756,6 +4848,8 @@
                     <td>${m.manager_name}</td>
                     <td>${m.event_name}</td>
                     <td>${Number(m.hours).toFixed(2)}</td>
+                    <td>$${Number(m.hourly_rate || 0).toFixed(2)}</td>
+                    <td>$${(Number(m.hours || 0) * Number(m.hourly_rate || 0)).toFixed(2)}</td>
                     <td class="status-${m.status.toLowerCase()}">${m.status}</td>
                     <td>${m.notes || '-'}</td>
                     <td>
@@ -4766,7 +4860,7 @@
                         ${canManageUsers() ? `<button class="action-btn delete-btn" onclick="deleteEntry('${m.id}', 'manager')">🗑</button>` : '-'}
                     </td>
                 </tr>
-            `).join('') || '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #888;">No manager hours yet</td></tr>';
+            `).join('') || '<tr><td colspan="10" style="text-align: center; padding: 40px; color: #888;">No manager hours yet</td></tr>';
 
             // Render Equipment Hours
             document.getElementById('equipmentHoursLoading').classList.add('hidden');
@@ -4781,6 +4875,8 @@
                     <td>${e.equipment_name}</td>
                     <td>${e.event_name}</td>
                     <td>${Number(e.hours).toFixed(2)}</td>
+                    <td>$${Number(e.hourly_rate || 0).toFixed(2)}</td>
+                    <td>$${(Number(e.hours || 0) * Number(e.hourly_rate || 0)).toFixed(2)}</td>
                     <td class="status-${e.status.toLowerCase()}">${e.status}</td>
                     <td>${e.notes || '-'}</td>
                     <td>
@@ -4791,7 +4887,7 @@
                         ${canManageUsers() ? `<button class="action-btn delete-btn" onclick="deleteEntry('${e.id}', 'equipment')">🗑</button>` : '-'}
                     </td>
                 </tr>
-            `).join('') || '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #888;">No equipment hours yet</td></tr>';
+            `).join('') || '<tr><td colspan="11" style="text-align: center; padding: 40px; color: #888;">No equipment hours yet</td></tr>';
 
 
             // Render Equipment Checkout
@@ -4880,7 +4976,7 @@
                         <td>${new Date(m.date).toLocaleDateString()}</td>
                         <td>${m.manager_name}</td>
                         <td>${m.event_name}</td>
-                        <td>${Number(m.hours).toFixed(2)} hours</td>
+                        <td>${Number(m.hours).toFixed(2)} hours • $${Number(m.hourly_rate || 0).toFixed(2)}/hr • $${(Number(m.hours || 0) * Number(m.hourly_rate || 0)).toFixed(2)}</td>
                         <td>${m.notes || '-'}</td>
                         <td>
                             ${renderApprovalActions(m.id, 'manager', m)}
@@ -4894,7 +4990,7 @@
                         <td>${new Date(e.date).toLocaleDateString()}</td>
                         <td>${e.submitted_by}</td>
                         <td>${e.equipment_name} - ${e.event_name}</td>
-                        <td>${Number(e.hours).toFixed(2)} hours</td>
+                        <td>${Number(e.hours).toFixed(2)} hours • $${Number(e.hourly_rate || 0).toFixed(2)}/hr • $${(Number(e.hours || 0) * Number(e.hourly_rate || 0)).toFixed(2)}</td>
                         <td>${e.notes || '-'}</td>
                         <td>
                             ${renderApprovalActions(e.id, 'equipment', e)}
@@ -4961,13 +5057,30 @@
         // STAFF PAYROLL VIEW
         // ============================================
 
+        let lastRenderedPayrollEntries = [];
+
+        function normalizePayrollName(value) {
+            return String(value || '')
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, ' ');
+        }
+
         function getPayrollStaffKey(entry) {
-            return entry.user_id || getEntryUserName(entry);
+            const enteredName = normalizePayrollName(entry?.staff_name || getEntryUserName(entry));
+            if (enteredName) return `name:${enteredName}`;
+
+            const profile = users.find(user => user.id === entry?.user_id);
+            const profileName = normalizePayrollName(profile?.full_name || profile?.email);
+            if (profileName) return `name:${profileName}`;
+
+            return entry?.user_id ? `user:${entry.user_id}` : 'unknown';
         }
 
         function getPayrollStaffDisplayNameByKey(key) {
-            const profile = users.find(u => u.id === key || u.email === key || u.full_name === key);
-            return profile?.full_name || profile?.email || key || 'Unknown';
+            if (!key || key === 'all') return 'All Staff';
+            const option = getPayrollStaffOptions().find(item => item.key === key);
+            return option?.name || String(key).replace(/^name:/, '') || 'Unknown';
         }
 
         function getPayrollStaffOptions() {
@@ -4975,15 +5088,16 @@
 
             users.forEach(user => {
                 if (!user || user.role === 'disabled') return;
-                const key = user.id || user.email || user.full_name;
-                if (!key) return;
-                staffMap.set(key, user.full_name || user.email || 'Unnamed User');
+                const displayName = user.full_name || user.email || 'Unnamed User';
+                const normalized = normalizePayrollName(displayName);
+                if (!normalized) return;
+                staffMap.set(`name:${normalized}`, displayName);
             });
 
             getPayrollEntries().forEach(entry => {
                 const key = getPayrollStaffKey(entry);
-                const name = getEntryUserName(entry);
-                if (key && !staffMap.has(key)) staffMap.set(key, name || key);
+                const name = entry.staff_name || getEntryUserName(entry) || key;
+                if (key && key !== 'unknown' && !staffMap.has(key)) staffMap.set(key, name);
             });
 
             return Array.from(staffMap.entries())
@@ -4995,16 +5109,16 @@
             const select = document.getElementById('payrollStaffSelect');
             if (!select || !canViewAll()) return;
 
-            const currentValue = select.value;
+            const currentValue = select.value || 'all';
             const options = getPayrollStaffOptions();
 
-            select.innerHTML = '<option value="">Select staff member</option>' + options.map(option => `
+            select.innerHTML = '<option value="all">All Staff</option>' + options.map(option => `
                 <option value="${String(option.key).replace(/"/g, '&quot;')}">${option.name}</option>
             `).join('');
 
-            if (currentValue && options.some(option => String(option.key) === String(currentValue))) {
-                select.value = currentValue;
-            }
+            select.value = options.some(option => String(option.key) === String(currentValue)) || currentValue === 'all'
+                ? currentValue
+                : 'all';
         }
 
         function getPayrollEntries() {
@@ -5015,11 +5129,13 @@
                 payrollEntries.push({
                     source_id: show.id,
                     user_id: show.user_id,
-                    date: show.date,
+                    date: String(show.date || '').slice(0, 10),
                     type: 'Show',
                     staff_name: show.dj_name,
                     details: show.venue_name || '-',
                     hours: 0,
+                    hourly_rate: 0,
+                    hourly_pay: 0,
                     show_pay: Number.isFinite(showPay) ? showPay : 0,
                     status: show.status || 'Pending'
                 });
@@ -5027,14 +5143,19 @@
 
             managerHoursEntries.forEach(entry => {
                 const hours = Number(entry.hours || 0);
+                const hourlyRate = Number(entry.hourly_rate || 0);
+                const safeHours = Number.isFinite(hours) ? hours : 0;
+                const safeRate = Number.isFinite(hourlyRate) ? hourlyRate : 0;
                 payrollEntries.push({
                     source_id: entry.id,
                     user_id: entry.user_id,
-                    date: entry.date,
+                    date: String(entry.date || '').slice(0, 10),
                     type: 'Manager Hours',
                     staff_name: entry.manager_name,
                     details: entry.event_name || '-',
-                    hours: Number.isFinite(hours) ? hours : 0,
+                    hours: safeHours,
+                    hourly_rate: safeRate,
+                    hourly_pay: safeHours * safeRate,
                     show_pay: 0,
                     status: entry.status || 'Pending'
                 });
@@ -5042,14 +5163,19 @@
 
             equipmentHoursEntries.forEach(entry => {
                 const hours = Number(entry.hours || 0);
+                const hourlyRate = Number(entry.hourly_rate || 0);
+                const safeHours = Number.isFinite(hours) ? hours : 0;
+                const safeRate = Number.isFinite(hourlyRate) ? hourlyRate : 0;
                 payrollEntries.push({
                     source_id: entry.id,
                     user_id: entry.user_id,
-                    date: entry.date,
+                    date: String(entry.date || '').slice(0, 10),
                     type: 'Equipment Hours',
                     staff_name: entry.submitted_by,
                     details: [entry.equipment_name, entry.event_name].filter(Boolean).join(' - ') || '-',
-                    hours: Number.isFinite(hours) ? hours : 0,
+                    hours: safeHours,
+                    hourly_rate: safeRate,
+                    hourly_pay: safeHours * safeRate,
                     show_pay: 0,
                     status: entry.status || 'Pending'
                 });
@@ -5058,18 +5184,112 @@
             return payrollEntries;
         }
 
+        function formatLocalDateInput(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatPayrollDate(value) {
+            const datePart = String(value || '').slice(0, 10);
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return value || '-';
+            const [year, month, day] = datePart.split('-').map(Number);
+            return new Date(year, month - 1, day).toLocaleDateString();
+        }
+
         function setPayrollRange(days) {
             const end = new Date();
             const start = new Date();
-            start.setDate(end.getDate() - Number(days));
+            start.setDate(end.getDate() - Math.max(Number(days) - 1, 0));
 
             const startInput = document.getElementById('payrollStartDate');
             const endInput = document.getElementById('payrollEndDate');
 
-            if (startInput) startInput.value = start.toISOString().split('T')[0];
-            if (endInput) endInput.value = end.toISOString().split('T')[0];
+            if (startInput) startInput.value = formatLocalDateInput(start);
+            if (endInput) endInput.value = formatLocalDateInput(end);
 
             renderStaffPayrollView();
+        }
+
+        function getFilteredPayrollEntries() {
+            const selectedStaff = document.getElementById('payrollStaffSelect')?.value || 'all';
+            const startValue = document.getElementById('payrollStartDate')?.value || '';
+            const endValue = document.getElementById('payrollEndDate')?.value || '';
+            const statusFilter = document.getElementById('payrollStatusFilter')?.value || 'all';
+
+            let entries = getPayrollEntries();
+
+            if (selectedStaff !== 'all') {
+                entries = entries.filter(entry => getPayrollStaffKey(entry) === selectedStaff);
+            }
+
+            if (statusFilter !== 'all') {
+                entries = entries.filter(entry => entry.status === statusFilter);
+            }
+
+            return entries.filter(entry => {
+                const entryDate = String(entry.date || '').slice(0, 10);
+                if (!entryDate) return true;
+                if (startValue && entryDate < startValue) return false;
+                if (endValue && entryDate > endValue) return false;
+                return true;
+            }).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.staff_name || '').localeCompare(String(b.staff_name || '')));
+        }
+
+        function renderPayrollRateCell(entry) {
+            if (entry.type === 'Show') return '-';
+
+            const rate = Number(entry.hourly_rate || 0);
+            const missingWarning = rate <= 0 ? '<span class="payroll-rate-missing">Wage not entered</span>' : '';
+
+            if (!canManageUsers()) {
+                return `$${rate.toFixed(2)}${missingWarning}`;
+            }
+
+            const inputId = `payroll-rate-${entry.type === 'Manager Hours' ? 'manager' : 'equipment'}-${entry.source_id}`;
+            return `
+                <span class="payroll-rate-editor">
+                    <span>$</span>
+                    <input type="number" id="${inputId}" value="${rate.toFixed(2)}" min="0" step="0.01" aria-label="Hourly wage for ${entry.staff_name || 'staff member'}">
+                    <button type="button" class="btn-secondary" onclick="savePayrollHourlyRate('${entry.source_id}', '${entry.type}', '${inputId}')">Save</button>
+                </span>
+                ${missingWarning}
+            `;
+        }
+
+        async function savePayrollHourlyRate(sourceId, type, inputId) {
+            if (!canManageUsers()) {
+                showError('Only admins can adjust hourly wages.');
+                return;
+            }
+
+            const rateInput = document.getElementById(inputId);
+            const hourlyRate = Number(rateInput?.value);
+            if (!Number.isFinite(hourlyRate) || hourlyRate < 0) {
+                showError('Enter a valid hourly wage of $0.00 or greater.');
+                return;
+            }
+
+            const table = type === 'Manager Hours' ? 'manager_hours' : type === 'Equipment Hours' ? 'equipment_hours' : '';
+            if (!table) {
+                showError('Hourly wages only apply to manager and equipment/storage hours.');
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from(table)
+                    .update({ hourly_rate: hourlyRate })
+                    .eq('id', sourceId);
+
+                if (error) throw error;
+                showSuccess('Hourly wage saved successfully.');
+                await loadData();
+            } catch (error) {
+                console.error('Hourly wage update error:', error);
+                showError('Failed to save hourly wage: ' + error.message);
+            }
         }
 
         function renderStaffPayrollView() {
@@ -5081,40 +5301,19 @@
                 return;
             }
 
-            const selectedStaff = document.getElementById('payrollStaffSelect')?.value || '';
-            const startValue = document.getElementById('payrollStartDate')?.value;
-            const endValue = document.getElementById('payrollEndDate')?.value;
-            const statusFilter = document.getElementById('payrollStatusFilter')?.value || 'Approved';
-            const startDate = startValue ? new Date(startValue + 'T00:00:00') : null;
-            const endDate = endValue ? new Date(endValue + 'T23:59:59') : null;
-
-            let entries = getPayrollEntries();
-
-            if (selectedStaff) {
-                entries = entries.filter(entry => String(getPayrollStaffKey(entry)) === String(selectedStaff));
-            } else {
-                entries = [];
-            }
-
-            if (statusFilter !== 'all') {
-                entries = entries.filter(entry => entry.status === statusFilter);
-            }
-
-            entries = entries.filter(entry => {
-                if (!entry.date) return true;
-                const entryDate = new Date(String(entry.date).slice(0, 10) + 'T12:00:00');
-                if (startDate && entryDate < startDate) return false;
-                if (endDate && entryDate > endDate) return false;
-                return true;
-            }).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+            const selectedStaff = document.getElementById('payrollStaffSelect')?.value || 'all';
+            const entries = getFilteredPayrollEntries();
+            lastRenderedPayrollEntries = entries;
 
             const totalHours = entries.reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
             const showPay = entries.reduce((sum, entry) => sum + Number(entry.show_pay || 0), 0);
-            const totalOwed = showPay;
+            const hourlyPay = entries.reduce((sum, entry) => sum + Number(entry.hourly_pay || 0), 0);
+            const totalOwed = showPay + hourlyPay;
 
             setTextIfExists('payrollEntryCount', entries.length);
             setTextIfExists('payrollTotalHours', totalHours.toFixed(2));
             setTextIfExists('payrollShowPay', `$${showPay.toFixed(2)}`);
+            setTextIfExists('payrollHourlyPay', `$${hourlyPay.toFixed(2)}`);
             setTextIfExists('payrollTotalOwed', `$${totalOwed.toFixed(2)}`);
 
             const empty = document.getElementById('payrollEmpty');
@@ -5123,16 +5322,9 @@
 
             if (!body || !empty || !wrap) return;
 
-            if (!selectedStaff) {
-                empty.textContent = 'Select a staff member to view payroll details.';
-                empty.classList.remove('hidden');
-                wrap.classList.add('hidden');
-                body.innerHTML = '';
-                return;
-            }
-
             if (!entries.length) {
-                empty.textContent = 'No payroll entries found for this staff member and timeframe.';
+                const staffLabel = selectedStaff === 'all' ? 'any staff' : getPayrollStaffDisplayNameByKey(selectedStaff);
+                empty.textContent = `No payroll entries found for ${staffLabel} with the selected dates and status. Try All Statuses to include pending submissions.`;
                 empty.classList.remove('hidden');
                 wrap.classList.add('hidden');
                 body.innerHTML = '';
@@ -5144,14 +5336,16 @@
 
             body.innerHTML = entries.map(entry => {
                 const rowShowPay = Number(entry.show_pay || 0);
-                const rowTotal = rowShowPay;
+                const rowHourlyPay = Number(entry.hourly_pay || 0);
+                const rowTotal = rowShowPay + rowHourlyPay;
                 return `
                     <tr>
-                        <td>${entry.date ? new Date(entry.date).toLocaleDateString() : '-'}</td>
+                        <td>${formatPayrollDate(entry.date)}</td>
                         <td><span class="type-badge ${entry.type === 'Show' ? 'type-show' : entry.type === 'Manager Hours' ? 'type-manager' : 'type-equipment'}">${entry.type}</span></td>
                         <td>${entry.staff_name || getPayrollStaffDisplayNameByKey(selectedStaff)}</td>
                         <td>${entry.details || '-'}</td>
                         <td>${Number(entry.hours || 0).toFixed(2)}</td>
+                        <td>${renderPayrollRateCell(entry)}</td>
                         <td>${rowShowPay ? `$${rowShowPay.toFixed(2)}` : '-'}</td>
                         <td>$${rowTotal.toFixed(2)}</td>
                         <td class="status-${String(entry.status || 'Pending').toLowerCase()}">${entry.status || 'Pending'}</td>
@@ -5160,9 +5354,41 @@
             }).join('');
         }
 
+        function csvCell(value) {
+            return `"${String(value ?? '').replace(/"/g, '""')}"`;
+        }
+
+        function exportStaffPayrollCSV() {
+            const entries = getFilteredPayrollEntries();
+            if (!entries.length) {
+                showError('There are no payroll entries to export for the selected filters.');
+                return;
+            }
+
+            const headers = ['Date', 'Type', 'Staff Member', 'Details', 'Hours', 'Hourly Wage', 'Show Pay', 'Total', 'Status'];
+            const rows = entries.map(entry => {
+                const total = Number(entry.show_pay || 0) + Number(entry.hourly_pay || 0);
+                return [
+                    entry.date,
+                    entry.type,
+                    entry.staff_name,
+                    entry.details,
+                    Number(entry.hours || 0).toFixed(2),
+                    Number(entry.hourly_rate || 0).toFixed(2),
+                    Number(entry.show_pay || 0).toFixed(2),
+                    total.toFixed(2),
+                    entry.status
+                ];
+            });
+
+            const csvContent = [headers, ...rows].map(row => row.map(csvCell).join(',')).join('\n');
+            downloadFile(csvContent, `jammin-payroll-${formatLocalDateInput(new Date())}.csv`, 'text/csv');
+            showSuccess('Payroll CSV exported successfully.');
+        }
+
         function printStaffPayroll() {
-            if (!document.getElementById('payrollStaffSelect')?.value) {
-                alert('Select a staff member first.');
+            if (!lastRenderedPayrollEntries.length) {
+                alert('There are no payroll entries to print for the selected filters.');
                 return;
             }
             window.print();
@@ -5481,7 +5707,7 @@
         }
 
         function clearShowForm() {
-            ['showDate', 'venueName', 'startTime', 'endTime', 'showNotes'].forEach(id => {
+            ['showDate', 'venueName', 'showPayAmount', 'showStartTime', 'showEndTime', 'showNotes'].forEach(id => {
                 document.getElementById(id).value = '';
             });
             if (getRole() !== 'user') document.getElementById('showDj').value = '';
@@ -5490,7 +5716,7 @@
 
 
         function clearManagerHoursForm() {
-            ['managerDate', 'managerName', 'managerHours', 'managerEventName', 'managerNotes'].forEach(id => {
+            ['managerDate', 'managerName', 'managerHours', 'managerHourlyRate', 'managerEventName', 'managerNotes'].forEach(id => {
                 document.getElementById(id).value = '';
             });
             document.getElementById('managerStatus').value = 'Pending';
@@ -5498,7 +5724,7 @@
         }
 
         function clearEquipmentHoursForm() {
-            ['equipmentDate', 'equipmentUserName', 'equipmentName', 'equipmentHours', 'equipmentEventName', 'equipmentNotes'].forEach(id => {
+            ['equipmentDate', 'equipmentUserName', 'equipmentName', 'equipmentHours', 'equipmentHourlyRate', 'equipmentEventName', 'equipmentNotes'].forEach(id => {
                 document.getElementById(id).value = '';
             });
             document.getElementById('equipmentStatus').value = 'Pending';
@@ -5583,6 +5809,29 @@
 
 
 
+        async function getEdgeFunctionErrorMessage(error) {
+            if (!error) return 'Unknown Edge Function error.';
+
+            try {
+                const response = error.context;
+                if (response && typeof response.clone === 'function') {
+                    const text = await response.clone().text();
+                    if (text) {
+                        try {
+                            const payload = JSON.parse(text);
+                            return payload.error || payload.message || text;
+                        } catch (_) {
+                            return text;
+                        }
+                    }
+                }
+            } catch (contextError) {
+                console.warn('Could not read Edge Function error response:', contextError);
+            }
+
+            return error.message || String(error);
+        }
+
         // ============================================
         // ADMIN USER MANAGEMENT
         // ============================================
@@ -5605,7 +5854,7 @@
             }
 
             if (password.length < 6) {
-                showError('Temporary password must be at least 6 characters.');
+                showError('Initial password must be at least 6 characters.');
                 return;
             }
 
@@ -5618,7 +5867,15 @@
             }
 
             try {
+                const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+                if (sessionError) throw sessionError;
+                const accessToken = sessionData?.session?.access_token;
+                if (!accessToken) throw new Error('Your admin session has expired. Sign out and sign back in.');
+
                 const { data, error } = await supabaseClient.functions.invoke('admin-create-user', {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    },
                     body: {
                         email,
                         password,
@@ -5638,12 +5895,13 @@
                 document.getElementById('newUserPhone').value = '';
                 document.getElementById('newUserRole').value = 'user';
 
-                showSuccess('User created successfully and login email was sent.');
+                showSuccess(data?.message || 'User created successfully.');
                 await loadUsers();
 
             } catch (error) {
                 console.error('Create user error:', error);
-                showError('Failed to create user: ' + (error.message || JSON.stringify(error)));
+                const detailedMessage = await getEdgeFunctionErrorMessage(error);
+                showError('Failed to create user: ' + detailedMessage);
             } finally {
                 if (btn) {
                     btn.disabled = false;
@@ -5751,7 +6009,7 @@
             const newPassword = input ? input.value : '';
 
             if (!newPassword || newPassword.length < 6) {
-                showError('Temporary password must be at least 6 characters.');
+                showError('Initial password must be at least 6 characters.');
                 return;
             }
 
