@@ -46,8 +46,6 @@ create table if not exists public.staff_training (
   )
 );
 
--- Standard categories allow one record per DJ. "Other Event Type" can have
--- multiple records as long as each custom label is different.
 create unique index if not exists staff_training_unique_item
   on public.staff_training (
     dj_user_id,
@@ -130,8 +128,6 @@ begin
     raise exception 'The selected training category is missing or inactive.';
   end if;
 
-  -- Authenticated browser users must be administrators or managers.
-  -- Service-role operations have no auth.uid() and remain available for imports.
   if actor_id is not null then
     if actor_role not in ('admin', 'manager') then
       raise exception 'Only administrators and managers can update DJ training.';
@@ -143,6 +139,10 @@ begin
 
     if actor_role = 'manager' and category_admin_only then
       raise exception 'This training item requires administrator sign-off.';
+    end if;
+
+    if tg_op = 'UPDATE' and actor_role = 'manager' and old.status = 'complete' and new.completed_by_user_id is distinct from old.completed_by_user_id then
+      raise exception 'Managers cannot replace an existing training signer.';
     end if;
   end if;
 
@@ -175,16 +175,8 @@ begin
     else
       new.completion_date := coalesce(new.completion_date, old.completion_date, current_date);
       new.completed_at := coalesce(new.completed_at, old.completed_at, now());
-
-      -- Managers may update notes or the completion date, but they cannot
-      -- rewrite who originally signed off on an already-completed item.
-      if actor_role = 'manager' then
-        new.completed_by_user_id := old.completed_by_user_id;
-        new.completed_by_name := old.completed_by_name;
-      else
-        new.completed_by_user_id := coalesce(new.completed_by_user_id, old.completed_by_user_id);
-        new.completed_by_name := coalesce(new.completed_by_name, old.completed_by_name, actor_name, 'System');
-      end if;
+      new.completed_by_user_id := coalesce(new.completed_by_user_id, old.completed_by_user_id);
+      new.completed_by_name := coalesce(new.completed_by_name, old.completed_by_name, actor_name, 'System');
     end if;
   else
     new.completion_date := null;
