@@ -175,8 +175,16 @@ begin
     else
       new.completion_date := coalesce(new.completion_date, old.completion_date, current_date);
       new.completed_at := coalesce(new.completed_at, old.completed_at, now());
-      new.completed_by_user_id := coalesce(new.completed_by_user_id, old.completed_by_user_id);
-      new.completed_by_name := coalesce(new.completed_by_name, old.completed_by_name, actor_name, 'System');
+
+      -- Managers may update notes or the completion date, but they cannot
+      -- rewrite who originally signed off on an already-completed item.
+      if actor_role = 'manager' then
+        new.completed_by_user_id := old.completed_by_user_id;
+        new.completed_by_name := old.completed_by_name;
+      else
+        new.completed_by_user_id := coalesce(new.completed_by_user_id, old.completed_by_user_id);
+        new.completed_by_name := coalesce(new.completed_by_name, old.completed_by_name, actor_name, 'System');
+      end if;
     end if;
   else
     new.completion_date := null;
@@ -307,34 +315,40 @@ alter table public.training_categories enable row level security;
 alter table public.staff_training enable row level security;
 alter table public.training_history enable row level security;
 
-create policy if not exists "Authenticated users can read active training categories"
+drop policy if exists "Authenticated users can read active training categories" on public.training_categories;
+create policy "Authenticated users can read active training categories"
 on public.training_categories
 for select to authenticated
 using (active = true or public.current_user_role() in ('admin', 'manager'));
 
-create policy if not exists "Admins can manage training categories"
+drop policy if exists "Admins can manage training categories" on public.training_categories;
+create policy "Admins can manage training categories"
 on public.training_categories
 for all to authenticated
 using (public.current_user_role() = 'admin')
 with check (public.current_user_role() = 'admin');
 
-create policy if not exists "DJs can read their own training"
+drop policy if exists "DJs can read their own training" on public.staff_training;
+create policy "DJs can read their own training"
 on public.staff_training
 for select to authenticated
 using (dj_user_id = auth.uid());
 
-create policy if not exists "Admins and managers can read all DJ training"
+drop policy if exists "Admins and managers can read all DJ training" on public.staff_training;
+create policy "Admins and managers can read all DJ training"
 on public.staff_training
 for select to authenticated
 using (public.current_user_role() in ('admin', 'manager'));
 
-create policy if not exists "Admins can manage all DJ training"
+drop policy if exists "Admins can manage all DJ training" on public.staff_training;
+create policy "Admins can manage all DJ training"
 on public.staff_training
 for all to authenticated
 using (public.current_user_role() = 'admin')
 with check (public.current_user_role() = 'admin');
 
-create policy if not exists "Managers can create training sign-offs"
+drop policy if exists "Managers can create training sign-offs" on public.staff_training;
+create policy "Managers can create training sign-offs"
 on public.staff_training
 for insert to authenticated
 with check (
@@ -349,7 +363,8 @@ with check (
   )
 );
 
-create policy if not exists "Managers can update training sign-offs"
+drop policy if exists "Managers can update training sign-offs" on public.staff_training;
+create policy "Managers can update training sign-offs"
 on public.staff_training
 for update to authenticated
 using (
@@ -375,12 +390,14 @@ with check (
   )
 );
 
-create policy if not exists "DJs can read their own training history"
+drop policy if exists "DJs can read their own training history" on public.training_history;
+create policy "DJs can read their own training history"
 on public.training_history
 for select to authenticated
 using (dj_user_id = auth.uid());
 
-create policy if not exists "Admins and managers can read all training history"
+drop policy if exists "Admins and managers can read all training history" on public.training_history;
+create policy "Admins and managers can read all training history"
 on public.training_history
 for select to authenticated
 using (public.current_user_role() in ('admin', 'manager'));
