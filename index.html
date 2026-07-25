@@ -390,6 +390,28 @@
             background: #1d4ed8;
         }
 
+
+        .resend-welcome-btn {
+            background: #2563eb;
+            color: white;
+        }
+
+        .resend-welcome-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .admin-user-action-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .admin-user-action-row button {
+            margin: 0;
+        }
+
         .hidden {
             display: none;
         }
@@ -3532,8 +3554,11 @@
                         <option value="admin">Admin</option>
                     </select>
                 </div>
-                <button type="button" onclick="adminCreateUser()" id="createUserBtn">Add User</button>
-                <p class="danger-note">The user will receive a password-setup email. Share the initial password only through an approved secure channel if it is needed as a fallback.</p>
+                <div class="admin-user-action-row">
+                    <button type="button" onclick="adminCreateUser()" id="createUserBtn">Add User</button>
+                    <button type="button" class="resend-welcome-btn" onclick="adminResendAllWelcomeEmails()" id="resendAllWelcomeBtn">Resend Welcome Emails to All Active Users</button>
+                </div>
+                <p class="danger-note">New and resent welcome emails include a fresh password-setup link from notifications@command.myjammindjs.com. Share the initial password only through an approved secure channel if it is needed as a fallback.</p>
             </div>
 
             <div id="usersLoading" class="loading">Loading users</div>
@@ -6165,6 +6190,7 @@
                                     </div>
                                 ` : `
                                     <div class="user-action-stack">
+                                        <button id="resendWelcome_${u.id}" class="action-btn resend-welcome-btn" onclick="adminResendWelcomeEmail('${u.id}', decodeURIComponent('${encodedEmail}'))">Resend Welcome Email</button>
                                         <input type="password" id="resetPass_${u.id}" placeholder="New temp password" autocomplete="new-password">
                                         <button class="action-btn approve-btn" onclick="adminResetUserPassword('${u.id}', decodeURIComponent('${encodedEmail}'))">Reset Password</button>
                                         ${!isCurrentUser ? `<button class="action-btn delete-btn" onclick="adminScheduleUserDeletion('${u.id}', decodeURIComponent('${encodedEmail}'), '${u.role || 'user'}')">Schedule Deletion</button>` : ''}
@@ -6215,6 +6241,129 @@
             } catch (error) {
                 console.error('Role update error:', error);
                 showError('Failed to update role: ' + error.message);
+            }
+        }
+
+        async function invokeWelcomeEmailAction(action, userId = null) {
+            const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+            if (sessionError) throw sessionError;
+
+            const accessToken = sessionData?.session?.access_token;
+            if (!accessToken) {
+                throw new Error('Your admin session has expired. Sign out and sign back in.');
+            }
+
+            const body = {
+                action,
+                app_url: window.location.origin + window.location.pathname
+            };
+
+            if (userId) body.user_id = userId;
+
+            const { data, error } = await supabaseClient.functions.invoke('admin-resend-welcome', {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
+                },
+                body
+            });
+
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+            return data;
+        }
+
+        async function adminResendWelcomeEmail(userId, email) {
+            if (!canManageUsers()) {
+                showError('Only admins can resend welcome emails.');
+                return;
+            }
+
+            const target = users.find(user => user.id === userId);
+            if (target?.status === 'deletion_scheduled') {
+                showError('Cancel the scheduled deletion before resending this user’s welcome email.');
+                return;
+            }
+
+            if (!confirm(`Send a fresh welcome and password-setup email to ${email}?`)) {
+                return;
+            }
+
+            const btn = document.getElementById(`resendWelcome_${userId}`);
+            const originalText = btn?.textContent || 'Resend Welcome Email';
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Sending...';
+            }
+
+            try {
+                const result = await invokeWelcomeEmailAction('single', userId);
+                showSuccess(`Welcome email sent to ${result?.sent_to || email}.`);
+            } catch (error) {
+                console.error('Resend welcome email error:', error);
+                const detailedMessage = await getEdgeFunctionErrorMessage(error);
+                showError('Failed to resend welcome email: ' + detailedMessage);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                }
+            }
+        }
+
+        async function adminResendAllWelcomeEmails() {
+            if (!canManageUsers()) {
+                showError('Only admins can resend welcome emails.');
+                return;
+            }
+
+            const activeUsers = users.filter(user =>
+                user.email &&
+                user.status !== 'deletion_scheduled' &&
+                user.status !== 'disabled'
+            );
+
+            if (!activeUsers.length) {
+                showError('There are no active users with email addresses.');
+                return;
+            }
+
+            if (!confirm(
+                `Send a fresh welcome and password-setup email to all ${activeUsers.length} active users?\n\n` +
+                'Each person will receive an individual email with their own secure setup link.'
+            )) {
+                return;
+            }
+
+            const btn = document.getElementById('resendAllWelcomeBtn');
+            const originalText = btn?.textContent || 'Resend Welcome Emails to All Active Users';
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Sending Welcome Emails...';
+            }
+
+            try {
+                const result = await invokeWelcomeEmailAction('all_active');
+                const sent = Number(result?.sent || 0);
+                const failed = Number(result?.failed || 0);
+
+                if (failed > 0) {
+                    const failedEmails = Array.isArray(result?.failures)
+                        ? result.failures.slice(0, 5).map(item => item.email || item.user_id).filter(Boolean).join(', ')
+                        : '';
+                    showError(`${sent} welcome email${sent === 1 ? '' : 's'} sent, but ${failed} failed.${failedEmails ? ` Failed: ${failedEmails}` : ''}`);
+                    console.warn('Welcome email failures:', result?.failures || []);
+                } else {
+                    showSuccess(`${sent} welcome email${sent === 1 ? '' : 's'} sent successfully.`);
+                }
+            } catch (error) {
+                console.error('Bulk resend welcome email error:', error);
+                const detailedMessage = await getEdgeFunctionErrorMessage(error);
+                showError('Failed to resend welcome emails: ' + detailedMessage);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                }
             }
         }
 
