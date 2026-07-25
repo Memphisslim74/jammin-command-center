@@ -1,0 +1,52 @@
+name: Install personal training progress
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - my-training-progress.js
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Connect personal training progress to the app
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check my-training-progress.js
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          marker = '    <script src="my-training-progress.js"></script>\n'
+          if marker not in text:
+              anchor = '    <script src="training-type-manager.js"></script>\n'
+              if anchor not in text:
+                  raise SystemExit('Could not find training-type-manager.js script tag.')
+              text = text.replace(anchor, anchor + marker, 1)
+              path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit integration
+        shell: bash
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "Personal training progress is already connected."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Connect personal training progress panel"
+          git push origin HEAD:main
