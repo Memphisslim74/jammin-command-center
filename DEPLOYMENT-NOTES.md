@@ -1,4 +1,4 @@
-# JAMMIN Command Center — Accounting Update
+# JAMMIN Command Center — Accounting and Bulk Approval Update
 
 ## Changes included
 
@@ -11,6 +11,11 @@
 - Added payroll CSV export.
 - User creation now sends the signed-in admin token explicitly and displays the actual Edge Function error response.
 - Included a replacement `admin-create-user` Edge Function.
+- Pending Approvals now supports individual checkbox selection.
+- Added a table-header checkbox and **Select All Visible** option.
+- Added **Approve Selected**, **Deny Selected**, and **Clear Selection** actions.
+- Added a live selected-entry count and confirmation before any bulk action.
+- Administrators still cannot approve or deny their own submissions.
 
 ## Required deployment order
 

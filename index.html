@@ -2000,10 +2000,40 @@
             line-height: 1.35;
         }
 
+        .bulk-selection-count {
+            display: inline-flex;
+            align-items: center;
+            min-height: 34px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.06);
+            color: #f4f4f4;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
         .approval-check {
             width: 18px;
             height: 18px;
             accent-color: #e91e8c;
+            cursor: pointer;
+        }
+
+        .approval-check:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
+
+        .bulk-approval-actions button:disabled {
+            cursor: not-allowed;
+            opacity: 0.48;
+            transform: none;
+        }
+
+        .selection-column {
+            width: 48px;
+            min-width: 48px;
+            text-align: center;
         }
 
         .own-entry-note {
@@ -3407,18 +3437,22 @@
             <div id="pendingLoading" class="loading">Loading pending items</div>
             <div id="bulkApprovalBar" class="bulk-approval-bar hidden">
                 <div class="bulk-approval-note">
-                    Select pending items to approve or deny in bulk. Admins cannot approve or deny their own submissions.
+                    Check individual entries or select all visible entries, then approve or deny the selected group. Your own submissions cannot be selected.
                 </div>
                 <div class="bulk-approval-actions">
-                    <button type="button" class="btn-secondary" onclick="toggleAllPendingApprovals(true)">Select All Allowed</button>
-                    <button type="button" class="btn-secondary" onclick="toggleAllPendingApprovals(false)">Clear</button>
-                    <button type="button" class="action-btn approve-btn" onclick="bulkApprovePending()">✓ Bulk Approve</button>
-                    <button type="button" class="action-btn deny-btn" onclick="bulkDenyPending()">✗ Bulk Deny</button>
+                    <span id="bulkSelectionCount" class="bulk-selection-count">0 selected</span>
+                    <button type="button" class="btn-secondary" onclick="toggleAllPendingApprovals(true)">Select All Visible</button>
+                    <button type="button" class="btn-secondary" onclick="toggleAllPendingApprovals(false)">Clear Selection</button>
+                    <button type="button" id="approveSelectedButton" class="action-btn approve-btn" onclick="bulkApprovePending()" disabled>✓ Approve Selected</button>
+                    <button type="button" id="denySelectedButton" class="action-btn deny-btn" onclick="bulkDenyPending()" disabled>✗ Deny Selected</button>
                 </div>
             </div>
             <table id="pendingTableContent" class="hidden">
                 <thead>
                     <tr>
+                        <th class="selection-column">
+                            <input type="checkbox" id="selectAllPendingCheckbox" class="approval-check" aria-label="Select all visible pending entries" onchange="toggleAllPendingApprovals(this.checked)">
+                        </th>
                         <th>Type</th>
                         <th>Date</th>
                         <th>DJ Name</th>
@@ -4524,10 +4558,10 @@
 
         function renderApprovalCheckbox(id, type, record) {
             if (!canActOnEntry(record)) {
-                return '<span class="muted-action">—</span>';
+                return '<span class="muted-action" title="You cannot approve your own submission">—</span>';
             }
 
-            return `<input type="checkbox" class="approval-check pending-approval-check" data-id="${id}" data-type="${type}">`;
+            return `<input type="checkbox" class="approval-check pending-approval-check" data-id="${id}" data-type="${type}" aria-label="Select this pending entry" onchange="updateBulkApprovalSelectionState()">`;
         }
 
         function getSelectedPendingApprovals() {
@@ -4538,10 +4572,39 @@
                 }));
         }
 
+        function updateBulkApprovalSelectionState() {
+            const boxes = Array.from(document.querySelectorAll('.pending-approval-check'));
+            const selectedCount = boxes.filter(box => box.checked).length;
+            const countLabel = document.getElementById('bulkSelectionCount');
+            const selectAll = document.getElementById('selectAllPendingCheckbox');
+            const approveButton = document.getElementById('approveSelectedButton');
+            const denyButton = document.getElementById('denySelectedButton');
+
+            if (countLabel) {
+                countLabel.textContent = `${selectedCount} selected`;
+            }
+
+            if (approveButton) {
+                approveButton.disabled = selectedCount === 0;
+            }
+
+            if (denyButton) {
+                denyButton.disabled = selectedCount === 0;
+            }
+
+            if (selectAll) {
+                const allSelected = boxes.length > 0 && selectedCount === boxes.length;
+                selectAll.checked = allSelected;
+                selectAll.indeterminate = selectedCount > 0 && !allSelected;
+                selectAll.disabled = boxes.length === 0;
+            }
+        }
+
         function toggleAllPendingApprovals(checked) {
             document.querySelectorAll('.pending-approval-check').forEach(box => {
                 box.checked = checked;
             });
+            updateBulkApprovalSelectionState();
         }
 
         async function bulkUpdatePending(status) {
@@ -4558,22 +4621,42 @@
             }
 
             const actionLabel = status === 'Approved' ? 'approve' : 'deny';
+            const completedLabel = status === 'Approved' ? 'approved' : 'denied';
 
             if (!confirm(`Are you sure you want to ${actionLabel} ${selected.length} selected item(s)?`)) {
                 return;
             }
 
-            try {
-                for (const item of selected) {
+            const approveButton = document.getElementById('approveSelectedButton');
+            const denyButton = document.getElementById('denySelectedButton');
+            const originalApproveText = approveButton?.textContent;
+            const originalDenyText = denyButton?.textContent;
+
+            if (approveButton) approveButton.disabled = true;
+            if (denyButton) denyButton.disabled = true;
+
+            if (status === 'Approved' && approveButton) {
+                approveButton.textContent = 'Approving...';
+            } else if (status === 'Denied' && denyButton) {
+                denyButton.textContent = 'Denying...';
+            }
+
+            let completed = 0;
+            const failures = [];
+
+            for (const item of selected) {
+                try {
                     const record = getPendingEntryRecord(item.id, item.type);
 
                     if (!canActOnEntry(record)) {
+                        failures.push('An entry was no longer eligible for approval.');
                         continue;
                     }
 
                     const table = tableNameForEntryType(item.type);
 
                     if (!table) {
+                        failures.push(`Unknown entry type: ${item.type}`);
                         continue;
                     }
 
@@ -4582,15 +4665,37 @@
                         .update({ status })
                         .eq('id', item.id);
 
-                    if (error) throw error;
+                    if (error) {
+                        failures.push(error.message);
+                    } else {
+                        completed += 1;
+                    }
+                } catch (error) {
+                    failures.push(error.message || 'Unknown error');
                 }
+            }
 
-                showSuccess(`${selected.length} item(s) ${status === 'Approved' ? 'approved' : 'denied'} successfully.`);
+            if (approveButton && originalApproveText) {
+                approveButton.textContent = originalApproveText;
+            }
+
+            if (denyButton && originalDenyText) {
+                denyButton.textContent = originalDenyText;
+            }
+
+            if (completed > 0) {
+                showSuccess(`${completed} item(s) ${completedLabel} successfully.`);
+            }
+
+            if (failures.length > 0) {
+                console.error('Bulk approval failures:', failures);
+                showError(`${failures.length} selected item(s) could not be updated. Refresh and try those entries again.`);
+            }
+
+            if (completed > 0) {
                 refreshAfterSubmit();
-
-            } catch (error) {
-                console.error('Bulk approval error:', error);
-                showError('Bulk update failed: ' + error.message);
+            } else {
+                updateBulkApprovalSelectionState();
             }
         }
 
@@ -5049,6 +5154,8 @@
                     bulkBar.classList.add('hidden');
                 }
             }
+
+            updateBulkApprovalSelectionState();
         }
 
 
