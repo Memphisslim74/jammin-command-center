@@ -1,0 +1,52 @@
+name: Install compact staff card layout
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Add compact staff card layout script
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          script = '<script src="staff-card-layout.js"></script>'
+
+          if script not in text:
+              marker = '<script src="dj-training-premium-print.js"></script>'
+              if marker not in text:
+                  marker = '<script src="dj-training.js"></script>'
+              if marker not in text:
+                  raise SystemExit('Could not find the DJ training script tag.')
+              text = text.replace(marker, marker + '\n    ' + script, 1)
+              path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Validate and commit
+        shell: bash
+        run: |
+          node --check staff-card-layout.js
+          if git diff --quiet -- index.html; then
+            echo "Staff card layout script is already installed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Enable compact staff card layout"
+          git push origin HEAD:main
