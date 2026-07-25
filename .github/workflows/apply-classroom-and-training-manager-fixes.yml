@@ -1,0 +1,110 @@
+name: Apply classroom and training manager updates
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/apply-classroom-and-training-manager-fixes.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Add Google Classroom link and keep manager open
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  if new in text:
+                      return text
+                  raise SystemExit(f'Could not find expected code for {label}')
+              return text.replace(old, new, 1)
+
+          progress_path = Path('my-training-progress.js')
+          progress = progress_path.read_text(encoding='utf-8')
+
+          progress = replace_once(
+              progress,
+              "    };\n\n    const esc = (value) => String(value ?? '')",
+              "    };\n\n    const GOOGLE_CLASSROOM_URL = 'https://classroom.google.com/u/5/w/NzQyMTEyMzE1NDgz/t/all';\n\n    const esc = (value) => String(value ?? '')",
+              'Google Classroom URL constant'
+          )
+
+          progress = replace_once(
+              progress,
+              '''            .my-training-actions button {\n                min-height: 41px;\n                margin: 0;\n                padding: 9px 14px;\n            }''',
+              '''            .my-training-actions button,\n            .my-training-actions a {\n                min-height: 41px;\n                margin: 0;\n                padding: 9px 14px;\n                display: inline-flex;\n                align-items: center;\n                justify-content: center;\n                border-radius: 8px;\n                font-weight: 750;\n                text-decoration: none;\n            }\n\n            .my-training-classroom-btn {\n                color: #f8edf4;\n                background: rgba(255,255,255,.055);\n                border: 1px solid rgba(233,30,140,.30);\n                transition: background .18s ease, border-color .18s ease, transform .18s ease;\n            }\n\n            .my-training-classroom-btn:hover {\n                color: #fff;\n                background: rgba(233,30,140,.13);\n                border-color: rgba(233,30,140,.52);\n                transform: translateY(-1px);\n            }''',
+              'profile training action styles'
+          )
+
+          progress = replace_once(
+              progress,
+              '                .my-training-actions button { width: 100%; }',
+              '                .my-training-actions button, .my-training-actions a { width: 100%; }',
+              'mobile training action styles'
+          )
+
+          progress = replace_once(
+              progress,
+              '''            <div class="my-training-actions">\n                <button type="button" id="viewMyTrainingBtn">View My Training Record</button>\n            </div>`;''',
+              '''            <div class="my-training-actions">\n                <button type="button" id="viewMyTrainingBtn">View My Training Record</button>\n                <a class="my-training-classroom-btn" href="${GOOGLE_CLASSROOM_URL}" target="_blank" rel="noopener noreferrer">Open Google Classroom ↗</a>\n            </div>`;''',
+              'Google Classroom profile button'
+          )
+
+          progress_path.write_text(progress, encoding='utf-8')
+
+          manager_path = Path('training-type-manager.js')
+          manager = manager_path.read_text(encoding='utf-8')
+
+          manager = replace_once(
+              manager,
+              '<button type="button" class="btn-secondary" id="cancelTrainingTypeBtn">Cancel</button>',
+              '<button type="button" class="btn-secondary" id="cancelTrainingTypeBtn">Close</button>',
+              'training manager close label'
+          )
+
+          manager = replace_once(
+              manager,
+              '<button type="button" id="saveTrainingTypeBtn">Save Changes</button>',
+              '<button type="button" id="saveTrainingTypeBtn">Save Changes & Keep Editing</button>',
+              'training manager save label'
+          )
+
+          manager = replace_once(
+              manager,
+              "            showSuccessMessage('Training types updated successfully.');\n            await loadTrainingTypes();\n            if (window.JamminTraining?.refresh) await window.JamminTraining.refresh();\n            if (typeof renderUserCards === 'function') renderUserCards();\n            document.getElementById('trainingTypeOverlay')?.classList.add('hidden');",
+              "            showSuccessMessage('Training types saved. You can continue adding or editing types.');\n            await loadTrainingTypes();\n            if (window.JamminTraining?.refresh) await window.JamminTraining.refresh();\n            if (window.JamminMyTrainingProgress?.refresh) await window.JamminMyTrainingProgress.refresh(true);\n            if (typeof renderUserCards === 'function') renderUserCards();",
+              'keep training manager open after save'
+          )
+
+          manager_path.write_text(manager, encoding='utf-8')
+          PY
+
+          node --check my-training-progress.js
+          node --check training-type-manager.js
+
+      - name: Commit updates
+        shell: bash
+        run: |
+          if git diff --quiet -- my-training-progress.js training-type-manager.js; then
+            echo "Updates are already applied."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add my-training-progress.js training-type-manager.js
+          git commit -m "Add Google Classroom link and keep training manager open"
+          git push origin HEAD:main
