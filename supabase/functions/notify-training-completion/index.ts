@@ -141,12 +141,11 @@ Deno.serve(async (req) => {
 
     const { data: managers, error: managerError } = await adminClient
       .from("profiles")
-      .select("email")
-      .eq("role", "manager")
-      .eq("status", "active");
+      .select("email, status")
+      .eq("role", "manager");
     if (managerError) throw managerError;
 
-    let managerRecipients = [...new Set((managers || []).map((item) => item.email).filter(Boolean))] as string[];
+    let managerRecipients = [...new Set((managers || []).filter((item) => (item.status || "active") === "active").map((item) => item.email).filter(Boolean))] as string[];
     managerRecipients = managerRecipients.filter((email) => email.toLowerCase() !== dj.email.toLowerCase());
 
     if (!managerRecipients.length) {

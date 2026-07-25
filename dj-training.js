@@ -379,7 +379,7 @@
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:8px">
                     ${isAdmin() ? `<button type="button" class="btn-secondary" onclick="window.JamminTraining.printProfile('${userId}')">Save Training Profile as PDF</button>` : ''}
-                    ${canSignTraining() && progress.isComplete ? `<button type="button" id="sendTrainingCompletionBtn" onclick="window.JamminTraining.sendCompletion('${userId}')">Email Completion to DJ & Managers</button>` : ''}
+                    ${canSignTraining() && profile.id !== currentId() && progress.isComplete ? `<button type="button" id="sendTrainingCompletionBtn" onclick="window.JamminTraining.sendCompletion('${userId}')">Email Completion to DJ & Managers</button>` : ''}
                 </div>
             </div>
             <div class="training-list">
@@ -592,7 +592,7 @@
     }
 
     function openPrintWindow(html) {
-        const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+        const printWindow = window.open('', '_blank');
         if (!printWindow) {
             notifyError('The browser blocked the PDF window. Allow pop-ups for the Command Center and try again.');
             return;
@@ -755,7 +755,7 @@
     document.addEventListener('DOMContentLoaded', initializeTrainingFeature);
     const installTimer = setInterval(() => {
         initializeTrainingFeature();
-        if (document.getElementById('djTrainingLaunchButton') && trainingState.cardsPatched) {
+        if (document.getElementById('djTrainingLaunchButton') && trainingState.cardsPatched && currentId() && typeof currentProfile !== 'undefined' && currentProfile) {
             clearInterval(installTimer);
         }
     }, 700);
