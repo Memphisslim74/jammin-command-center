@@ -1,0 +1,59 @@
+name: Install Google Classroom integration
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/install-google-classroom-integration.yml
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Validate and connect Classroom module
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check google-classroom-integration.js
+          cp supabase/migrations/20260725_google_classroom_integration.sql supabase/RUN_THIS_ONCE_GOOGLE_CLASSROOM.sql
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          marker = '    <script src="google-classroom-integration.js"></script>\n'
+          if marker not in text:
+              anchors = [
+                  '    <script src="navigation-state.js"></script>\n',
+                  '    <script src="my-training-progress.js"></script>\n'
+              ]
+              for anchor in anchors:
+                  if anchor in text:
+                      text = text.replace(anchor, anchor + marker, 1)
+                      break
+              else:
+                  raise SystemExit('Could not find a training script anchor in index.html.')
+              path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit integration
+        shell: bash
+        run: |
+          if git diff --quiet -- index.html supabase/RUN_THIS_ONCE_GOOGLE_CLASSROOM.sql; then
+            echo "Google Classroom integration is already connected."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html supabase/RUN_THIS_ONCE_GOOGLE_CLASSROOM.sql
+          git commit -m "Connect Google Classroom integration"
+          git push origin HEAD:main
