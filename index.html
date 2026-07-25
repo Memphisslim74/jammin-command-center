@@ -2734,6 +2734,16 @@
             }
         }
 
+    
+        .edit-user-modal { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,.72); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .edit-user-modal.hidden { display: none; }
+        .edit-user-modal-card { width: min(720px, 100%); max-height: 90vh; overflow-y: auto; background: #2d1b3d; border: 1px solid rgba(233,30,140,.45); border-radius: 15px; padding: 24px; box-shadow: 0 24px 80px rgba(0,0,0,.5); }
+        .edit-user-modal-header { display:flex; align-items:center; justify-content:space-between; gap:15px; margin-bottom:18px; }
+        .edit-user-modal-header h2 { color:#e91e8c; margin:0; }
+        .edit-user-close { background:transparent; padding:0 8px; font-size:30px; box-shadow:none; }
+        .edit-user-form label { color:#ddd; font-size:.9em; display:flex; flex-direction:column; gap:6px; }
+        .edit-user-form label input, .edit-user-form label select { width:100%; }
+
     </style>
 </head>
 <body>
@@ -3548,6 +3558,8 @@
                     <input type="email" id="newUserEmail" placeholder="Email Address">
                     <input type="password" id="newUserPassword" placeholder="Initial Password" autocomplete="new-password">
                     <input type="tel" id="newUserPhone" placeholder="Phone Number">
+                    <input type="text" id="newUserCity" placeholder="City">
+                    <input type="text" id="newUserState" placeholder="State (for example, CO)">
                     <select id="newUserRole">
                         <option value="user">Standard User</option>
                         <option value="manager">Manager</option>
@@ -3580,6 +3592,34 @@
         </div>
 
     </div>
+
+
+        <div id="editUserModal" class="edit-user-modal hidden" role="dialog" aria-modal="true" aria-labelledby="editUserModalTitle">
+            <div class="edit-user-modal-card">
+                <div class="edit-user-modal-header">
+                    <h2 id="editUserModalTitle">Edit Staff Member</h2>
+                    <button type="button" class="edit-user-close" onclick="closeEditUserModal()" aria-label="Close">&times;</button>
+                </div>
+                <input type="hidden" id="editUserId">
+                <div class="admin-user-form edit-user-form">
+                    <label>Full Name<input type="text" id="editUserFullName"></label>
+                    <label>Email Address<input type="email" id="editUserEmail"></label>
+                    <label>Phone Number<input type="tel" id="editUserPhone"></label>
+                    <label>City<input type="text" id="editUserCity"></label>
+                    <label>State<input type="text" id="editUserState" maxlength="2" placeholder="CO"></label>
+                    <label>Role<select id="editUserRole">
+                        <option value="user">Standard User</option>
+                        <option value="manager">Manager</option>
+                        <option value="admin">Admin</option>
+                    </select></label>
+                </div>
+                <p class="danger-note">Changing the email address also changes the username used to sign in.</p>
+                <div class="admin-user-action-row">
+                    <button type="button" id="saveEditUserBtn" onclick="adminSaveUserEdits()">Save Changes</button>
+                    <button type="button" class="btn-secondary" onclick="closeEditUserModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
 
     <!-- Supabase Client Library -->
     <script src="https://unpkg.com/@supabase/supabase-js@2">
@@ -6036,6 +6076,8 @@
             const email = document.getElementById('newUserEmail')?.value.trim() || '';
             const password = document.getElementById('newUserPassword')?.value || '';
             const phone = document.getElementById('newUserPhone')?.value.trim() || '';
+            const city = document.getElementById('newUserCity')?.value.trim() || '';
+            const state = document.getElementById('newUserState')?.value.trim().toUpperCase() || '';
             const role = document.getElementById('newUserRole')?.value || 'user';
 
             if (!email || !password || !role) {
@@ -6072,6 +6114,8 @@
                         role,
                         full_name: fullName,
                         phone,
+                        city,
+                        state,
                         app_url: window.location.origin + window.location.pathname
                     }
                 });
@@ -6083,6 +6127,8 @@
                 document.getElementById('newUserEmail').value = '';
                 document.getElementById('newUserPassword').value = '';
                 document.getElementById('newUserPhone').value = '';
+                document.getElementById('newUserCity').value = '';
+                document.getElementById('newUserState').value = '';
                 document.getElementById('newUserRole').value = 'user';
 
                 showSuccess(data?.message || 'User created successfully.');
@@ -6190,6 +6236,7 @@
                                     </div>
                                 ` : `
                                     <div class="user-action-stack">
+                                        <button class="action-btn btn-secondary" onclick="openEditUserModal('${u.id}')">Edit Staff</button>
                                         <button id="resendWelcome_${u.id}" class="action-btn resend-welcome-btn" onclick="adminResendWelcomeEmail('${u.id}', decodeURIComponent('${encodedEmail}'))">Resend Welcome Email</button>
                                         <input type="password" id="resetPass_${u.id}" placeholder="New temp password" autocomplete="new-password">
                                         <button class="action-btn approve-btn" onclick="adminResetUserPassword('${u.id}', decodeURIComponent('${encodedEmail}'))">Reset Password</button>
@@ -6211,6 +6258,90 @@
                     loading.textContent = 'Unable to load users. Check Console for the exact Supabase error.';
                     loading.classList.remove('hidden');
                 }
+            }
+        }
+
+
+        function openEditUserModal(userId) {
+            if (!canManageUsers()) {
+                showError('Only admins can edit staff information.');
+                return;
+            }
+
+            const target = users.find(user => user.id === userId);
+            if (!target) {
+                showError('User not found.');
+                return;
+            }
+            if (target.status === 'deletion_scheduled') {
+                showError('Cancel the scheduled deletion before editing this user.');
+                return;
+            }
+
+            document.getElementById('editUserId').value = target.id;
+            document.getElementById('editUserFullName').value = target.full_name || '';
+            document.getElementById('editUserEmail').value = target.email || '';
+            document.getElementById('editUserPhone').value = target.phone || '';
+            document.getElementById('editUserCity').value = target.city || '';
+            document.getElementById('editUserState').value = target.state || '';
+            document.getElementById('editUserRole').value = target.role || 'user';
+            document.getElementById('editUserModal').classList.remove('hidden');
+        }
+
+        function closeEditUserModal() {
+            document.getElementById('editUserModal')?.classList.add('hidden');
+        }
+
+        async function adminSaveUserEdits() {
+            if (!canManageUsers()) {
+                showError('Only admins can edit staff information.');
+                return;
+            }
+
+            const userId = document.getElementById('editUserId')?.value;
+            const fullName = document.getElementById('editUserFullName')?.value.trim() || '';
+            const email = document.getElementById('editUserEmail')?.value.trim().toLowerCase() || '';
+            const phone = document.getElementById('editUserPhone')?.value.trim() || '';
+            const city = document.getElementById('editUserCity')?.value.trim() || '';
+            const state = document.getElementById('editUserState')?.value.trim().toUpperCase() || '';
+            const role = document.getElementById('editUserRole')?.value || 'user';
+
+            if (!userId || !fullName || !email) {
+                showError('Full name and email address are required.');
+                return;
+            }
+            if (state && state.length !== 2) {
+                showError('State must be a two-letter abbreviation, such as CO or GA.');
+                return;
+            }
+
+            const btn = document.getElementById('saveEditUserBtn');
+            const originalText = btn?.textContent || 'Save Changes';
+            if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+
+            try {
+                const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+                if (sessionError) throw sessionError;
+                const accessToken = sessionData?.session?.access_token;
+                if (!accessToken) throw new Error('Your admin session has expired. Sign out and sign back in.');
+
+                const { data, error } = await supabaseClient.functions.invoke('admin-update-user', {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                    body: { user_id: userId, full_name: fullName, email, phone, city, state, role }
+                });
+
+                if (error) throw error;
+                if (data?.error) throw new Error(data.error);
+
+                closeEditUserModal();
+                showSuccess('Staff information updated successfully.');
+                await loadUsers();
+            } catch (error) {
+                console.error('Edit user error:', error);
+                const detailedMessage = await getEdgeFunctionErrorMessage(error);
+                showError('Failed to update staff information: ' + detailedMessage);
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = originalText; }
             }
         }
 
