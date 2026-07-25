@@ -340,6 +340,56 @@
             background: #4b5563;
         }
 
+        .user-status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.78em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .user-status-active {
+            background: rgba(16, 185, 129, 0.18);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.55);
+        }
+
+        .user-status-disabled,
+        .user-status-deletion-scheduled {
+            background: rgba(239, 68, 68, 0.18);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.55);
+        }
+
+        .scheduled-delete-date {
+            color: #fca5a5;
+            font-size: 0.84em;
+            line-height: 1.35;
+            margin-top: 6px;
+        }
+
+        .user-action-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .user-action-stack input {
+            min-width: 170px;
+        }
+
+        .cancel-delete-btn {
+            background: #2563eb;
+            color: white;
+        }
+
+        .cancel-delete-btn:hover {
+            background: #1d4ed8;
+        }
+
         .hidden {
             display: none;
         }
@@ -3495,6 +3545,8 @@
                         <th>Phone</th>
                         <th>City/State</th>
                         <th>Role</th>
+                        <th>Account Status</th>
+                        <th>Permanent Deletion</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -3897,9 +3949,15 @@
 
             currentProfile = profile;
 
-            if (currentProfile.role === 'disabled') {
+            if ((currentProfile.status || 'active') !== 'active' || currentProfile.role === 'disabled') {
                 showLoginScreen();
-                showAuthError('Your account is disabled. Contact an administrator.');
+                const scheduledDate = currentProfile.deletion_scheduled_at
+                    ? formatUserDeletionDate(currentProfile.deletion_scheduled_at)
+                    : '';
+                const message = currentProfile.status === 'deletion_scheduled'
+                    ? `Your account is disabled and scheduled for permanent deletion${scheduledDate ? ` on ${scheduledDate}` : ''}. Contact an administrator if this should be canceled.`
+                    : 'Your account is disabled. Contact an administrator.';
+                showAuthError(message);
                 await supabaseClient.auth.signOut();
                 return;
             }
@@ -6017,6 +6075,33 @@
             }
         }
 
+        function formatUserDeletionDate(value) {
+            if (!value) return '';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '';
+            return new Intl.DateTimeFormat('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            }).format(date);
+        }
+
+        function getUserStatusLabel(user) {
+            const status = user?.status || 'active';
+            if (status === 'deletion_scheduled') return 'Deletion Scheduled';
+            if (status === 'disabled') return 'Disabled';
+            return 'Active';
+        }
+
+        function getUserStatusClass(user) {
+            const status = user?.status || 'active';
+            if (status === 'deletion_scheduled') return 'user-status-deletion-scheduled';
+            if (status === 'disabled') return 'user-status-disabled';
+            return 'user-status-active';
+        }
+
         async function loadUsers() {
             if (!canViewAll()) return;
 
@@ -6042,7 +6127,14 @@
 
                 users = data || [];
 
-                body.innerHTML = users.map(u => `
+                body.innerHTML = users.map(u => {
+                    const status = u.status || 'active';
+                    const deletionScheduled = status === 'deletion_scheduled';
+                    const deletionDate = formatUserDeletionDate(u.deletion_scheduled_at);
+                    const isCurrentUser = u.id === currentUser.id;
+                    const encodedEmail = encodeURIComponent(String(u.email || ''));
+
+                    return `
                     <tr>
                         <td>${u.email || '-'}</td>
                         <td>${u.full_name || '-'}</td>
@@ -6050,7 +6142,7 @@
                         <td>${[u.city, u.state].filter(Boolean).join(', ') || '-'}</td>
                         <td>
                             ${canManageUsers() ? `
-                                <select onchange="adminUpdateUserRole('${u.id}', this.value)">
+                                <select onchange="adminUpdateUserRole('${u.id}', this.value)" ${deletionScheduled ? 'disabled' : ''}>
                                     <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
                                     <option value="manager" ${u.role === 'manager' ? 'selected' : ''}>Manager</option>
                                     <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
@@ -6058,16 +6150,30 @@
                             ` : `${u.role || 'user'}`}
                         </td>
                         <td>
+                            <span class="user-status-badge ${getUserStatusClass(u)}">${getUserStatusLabel(u)}</span>
+                        </td>
+                        <td>
+                            ${deletionScheduled
+                                ? `<div class="scheduled-delete-date">Deletes permanently<br><strong>${deletionDate || '30 days after scheduling'}</strong></div>`
+                                : '-'}
+                        </td>
+                        <td>
                             ${canManageUsers() ? `
-                                <div class="reset-user-row">
-                                    <input type="password" id="resetPass_${u.id}" placeholder="New temp password" autocomplete="new-password">
-                                    <button class="action-btn approve-btn" onclick="adminResetUserPassword('${u.id}', '${u.email || ''}')">Reset Password</button>
-                                    ${u.id !== currentUser.id ? `<button class="action-btn delete-btn" onclick="adminDisableUser('${u.id}', '${u.email || ''}')">Disable</button>` : ''}
-                                </div>
+                                ${deletionScheduled ? `
+                                    <div class="user-action-stack">
+                                        <button class="action-btn cancel-delete-btn" onclick="adminCancelUserDeletion('${u.id}', decodeURIComponent('${encodedEmail}'))">Cancel Deletion</button>
+                                    </div>
+                                ` : `
+                                    <div class="user-action-stack">
+                                        <input type="password" id="resetPass_${u.id}" placeholder="New temp password" autocomplete="new-password">
+                                        <button class="action-btn approve-btn" onclick="adminResetUserPassword('${u.id}', decodeURIComponent('${encodedEmail}'))">Reset Password</button>
+                                        ${!isCurrentUser ? `<button class="action-btn delete-btn" onclick="adminScheduleUserDeletion('${u.id}', decodeURIComponent('${encodedEmail}'), '${u.role || 'user'}')">Schedule Deletion</button>` : ''}
+                                    </div>
+                                `}
                             ` : '-'}
                         </td>
-                    </tr>
-                `).join('') || '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #888;">No users found</td></tr>';
+                    </tr>`;
+                }).join('') || '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #888;">No users found</td></tr>';
 
                 if (loading) loading.classList.add('hidden');
                 if (table) table.classList.remove('hidden');
@@ -6088,6 +6194,13 @@
                 return;
             }
 
+            const target = users.find(user => user.id === userId);
+            if (target?.status === 'deletion_scheduled') {
+                showError('Cancel the scheduled deletion before changing this user’s role.');
+                await loadUsers();
+                return;
+            }
+
             try {
                 const { error } = await supabaseClient
                     .from('profiles')
@@ -6105,10 +6218,15 @@
             }
         }
 
-
         async function adminResetUserPassword(userId, email) {
             if (!canManageUsers()) {
                 showError('Only admins can reset passwords.');
+                return;
+            }
+
+            const target = users.find(user => user.id === userId);
+            if (target?.status === 'deletion_scheduled') {
+                showError('Cancel the scheduled deletion before resetting this user’s password.');
                 return;
             }
 
@@ -6140,35 +6258,87 @@
 
             } catch (error) {
                 console.error('Admin password reset error:', error);
-                showError('Failed to reset password: ' + error.message);
+                const detailedMessage = await getEdgeFunctionErrorMessage(error);
+                showError('Failed to reset password: ' + detailedMessage);
             }
         }
 
+        async function invokeUserDeletionAction(action, userId) {
+            const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+            if (sessionError) throw sessionError;
 
-        async function adminDisableUser(userId, email) {
+            const accessToken = sessionData?.session?.access_token;
+            if (!accessToken) {
+                throw new Error('Your admin session has expired. Sign out and sign back in.');
+            }
+
+            const { data, error } = await supabaseClient.functions.invoke('admin-user-deletion', {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
+                },
+                body: {
+                    action,
+                    user_id: userId
+                }
+            });
+
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+            return data;
+        }
+
+        async function adminScheduleUserDeletion(userId, email, role) {
             if (!canManageUsers()) {
-                showError('Only admins can disable users.');
+                showError('Only admins can schedule user deletion.');
                 return;
             }
 
-            if (!confirm(`Disable ${email}? This prevents them from viewing entries in the app, but does not delete their Auth account.`)) {
+            if (userId === currentUser.id) {
+                showError('You cannot schedule your own account for deletion.');
+                return;
+            }
+
+            const confirmation = prompt(
+                `Schedule permanent deletion for ${email}?\n\n` +
+                'Their access will be disabled immediately. Their login, profile, and all Command Center submissions will be permanently deleted after 30 days.\n\n' +
+                'Type DELETE to continue.'
+            );
+
+            if (confirmation !== 'DELETE') {
+                if (confirmation !== null) showError('Deletion was not scheduled. You must type DELETE exactly.');
                 return;
             }
 
             try {
-                const { error } = await supabaseClient
-                    .from('profiles')
-                    .update({ role: 'disabled', updated_at: new Date().toISOString() })
-                    .eq('id', userId);
-
-                if (error) throw error;
-
-                showSuccess('User disabled.');
+                const result = await invokeUserDeletionAction('schedule', userId);
+                const deletionDate = formatUserDeletionDate(result?.deletion_scheduled_at);
+                showSuccess(`User access disabled. Permanent deletion is scheduled${deletionDate ? ` for ${deletionDate}` : ' in 30 days'}.`);
                 await loadUsers();
-
             } catch (error) {
-                console.error('Disable user error:', error);
-                showError('Failed to disable user: ' + error.message);
+                console.error('Schedule deletion error:', error);
+                const detailedMessage = await getEdgeFunctionErrorMessage(error);
+                showError('Failed to schedule deletion: ' + detailedMessage);
+            }
+        }
+
+        async function adminCancelUserDeletion(userId, email) {
+            if (!canManageUsers()) {
+                showError('Only admins can cancel user deletion.');
+                return;
+            }
+
+            if (!confirm(`Cancel the scheduled deletion for ${email}? Their Command Center access will be restored immediately.`)) {
+                return;
+            }
+
+            try {
+                await invokeUserDeletionAction('cancel', userId);
+                showSuccess('Scheduled deletion canceled and user access restored.');
+                await loadUsers();
+            } catch (error) {
+                console.error('Cancel deletion error:', error);
+                const detailedMessage = await getEdgeFunctionErrorMessage(error);
+                showError('Failed to cancel deletion: ' + detailedMessage);
             }
         }
 
