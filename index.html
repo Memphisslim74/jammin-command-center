@@ -2744,6 +2744,325 @@
         .edit-user-form label { color:#ddd; font-size:.9em; display:flex; flex-direction:column; gap:6px; }
         .edit-user-form label input, .edit-user-form label select { width:100%; }
 
+    
+
+        /* Professional User Management dashboard */
+        #usersTable.user-management-shell {
+            padding: 0;
+            overflow: visible;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+
+        .users-page-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 18px;
+        }
+
+        .users-page-header h2 {
+            margin: 0 0 6px;
+            font-size: 1.7rem;
+            color: #fff;
+        }
+
+        .users-page-subtitle {
+            margin: 0;
+            color: #a89bb2;
+            line-height: 1.5;
+        }
+
+        .users-stat-row {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(110px, 1fr));
+            gap: 10px;
+            min-width: min(430px, 100%);
+        }
+
+        .users-mini-stat {
+            background: rgba(255,255,255,.055);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 12px;
+            padding: 12px 14px;
+        }
+
+        .users-mini-stat span {
+            display: block;
+            color: #9f93a9;
+            font-size: .76rem;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            margin-bottom: 5px;
+        }
+
+        .users-mini-stat strong {
+            color: #fff;
+            font-size: 1.35rem;
+        }
+
+        .admin-user-panel {
+            background: linear-gradient(145deg, rgba(64,39,75,.93), rgba(36,28,43,.96));
+            border: 1px solid rgba(233,30,140,.22);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 16px 44px rgba(0,0,0,.24);
+        }
+
+        .admin-user-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .admin-user-panel-header h3 {
+            margin: 0 0 4px;
+            color: #fff;
+            font-size: 1.05rem;
+        }
+
+        .admin-user-panel-header p {
+            margin: 0;
+            color: #9f93a9;
+            font-size: .9rem;
+        }
+
+        .admin-user-form input,
+        .admin-user-form select {
+            width: 100%;
+            min-height: 44px;
+            border: 1px solid rgba(255,255,255,.12);
+            background: rgba(15,12,18,.48);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+        }
+
+        .admin-user-form input:focus,
+        .admin-user-form select:focus {
+            border-color: rgba(233,30,140,.8);
+            box-shadow: 0 0 0 3px rgba(233,30,140,.12);
+        }
+
+        .users-toolbar {
+            display: grid;
+            grid-template-columns: minmax(240px, 1fr) 180px 180px;
+            gap: 12px;
+            margin: 18px 0;
+            padding: 14px;
+            background: rgba(255,255,255,.04);
+            border: 1px solid rgba(255,255,255,.075);
+            border-radius: 14px;
+        }
+
+        .users-toolbar input,
+        .users-toolbar select {
+            min-height: 43px;
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 9px;
+            background: rgba(14,11,17,.58);
+            color: #fff;
+            padding: 0 12px;
+            font-size: .94rem;
+        }
+
+        .users-toolbar select option { background: #251b2c; }
+
+        .users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(370px, 1fr));
+            gap: 16px;
+        }
+
+        .user-card {
+            background: linear-gradient(150deg, rgba(49,38,55,.98), rgba(31,27,36,.98));
+            border: 1px solid rgba(255,255,255,.075);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 12px 34px rgba(0,0,0,.22);
+            transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+        }
+
+        .user-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(233,30,140,.28);
+            box-shadow: 0 18px 42px rgba(0,0,0,.30);
+        }
+
+        .user-card-main {
+            padding: 18px;
+        }
+
+        .user-card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .user-identity {
+            display: flex;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .user-avatar {
+            width: 44px;
+            height: 44px;
+            flex: 0 0 44px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, rgba(233,30,140,.95), rgba(118,75,162,.95));
+            color: #fff;
+            font-weight: 800;
+            font-size: 1rem;
+            box-shadow: 0 8px 20px rgba(233,30,140,.18);
+        }
+
+        .user-card-name {
+            margin: 1px 0 4px;
+            color: #fff;
+            font-size: 1.02rem;
+            font-weight: 750;
+        }
+
+        .user-card-email {
+            color: #b8acbf;
+            font-size: .88rem;
+            word-break: break-word;
+        }
+
+        .user-card-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .user-detail {
+            background: rgba(255,255,255,.035);
+            border: 1px solid rgba(255,255,255,.055);
+            border-radius: 10px;
+            padding: 10px 11px;
+        }
+
+        .user-detail-label {
+            display: block;
+            color: #8f8498;
+            font-size: .69rem;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            margin-bottom: 4px;
+        }
+
+        .user-detail-value {
+            color: #e9e4ec;
+            font-size: .9rem;
+            line-height: 1.35;
+        }
+
+        .user-role-select {
+            width: 100%;
+            min-height: 32px;
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 7px;
+            background: rgba(10,8,12,.45);
+            color: #fff;
+            padding: 0 8px;
+        }
+
+        .user-card-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 9px;
+            padding: 14px 18px 18px;
+            border-top: 1px solid rgba(255,255,255,.06);
+            background: rgba(8,7,10,.12);
+        }
+
+        .user-card-actions .action-btn {
+            margin: 0;
+            min-height: 38px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: .84rem;
+            padding: 9px 10px;
+        }
+
+        .user-card-actions .edit-staff-btn {
+            background: rgba(255,255,255,.09);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,.1);
+        }
+
+        .user-card-actions .reset-toggle-btn {
+            background: rgba(16,185,129,.13);
+            color: #8cf0c6;
+            border: 1px solid rgba(16,185,129,.30);
+        }
+
+        .user-card-actions .delete-btn {
+            grid-column: 1 / -1;
+            background: rgba(239,68,68,.11);
+            color: #fda4af;
+            border: 1px solid rgba(239,68,68,.25);
+        }
+
+        .password-reset-panel {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            padding-top: 2px;
+        }
+
+        .password-reset-panel.hidden { display: none; }
+
+        .password-reset-panel input {
+            min-width: 0;
+            width: 100%;
+            min-height: 38px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,.12);
+            background: rgba(10,8,12,.48);
+            color: #fff;
+            padding: 0 10px;
+        }
+
+        .password-reset-panel button {
+            min-height: 38px;
+            padding: 8px 14px;
+        }
+
+        .users-empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 48px 20px;
+            color: #9f93a9;
+            border: 1px dashed rgba(255,255,255,.12);
+            border-radius: 14px;
+            background: rgba(255,255,255,.025);
+        }
+
+        @media (max-width: 900px) {
+            .users-page-header { flex-direction: column; }
+            .users-stat-row { width: 100%; min-width: 0; }
+            .users-toolbar { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 520px) {
+            .users-grid { grid-template-columns: 1fr; }
+            .user-card-details { grid-template-columns: 1fr; }
+            .user-card-actions { grid-template-columns: 1fr; }
+            .user-card-actions .delete-btn,
+            .password-reset-panel { grid-column: 1; }
+            .password-reset-panel { grid-template-columns: 1fr; }
+            .users-stat-row { grid-template-columns: 1fr; }
+        }
+
     </style>
 </head>
 <body>
@@ -3548,11 +3867,26 @@
             </table>
         </div>
 
-        <div class="table-container hidden" id="usersTable">
-            <h2>User Management</h2>
+        <div class="table-container hidden user-management-shell" id="usersTable">
+            <div class="users-page-header">
+                <div>
+                    <h2>People & Access</h2>
+                    <p class="users-page-subtitle">Manage staff profiles, access levels, welcome emails, passwords, and account lifecycle.</p>
+                </div>
+                <div class="users-stat-row">
+                    <div class="users-mini-stat"><span>Total Staff</span><strong id="usersStatTotal">0</strong></div>
+                    <div class="users-mini-stat"><span>Active</span><strong id="usersStatActive">0</strong></div>
+                    <div class="users-mini-stat"><span>Admins</span><strong id="usersStatAdmins">0</strong></div>
+                </div>
+            </div>
 
             <div class="admin-user-panel" id="adminAddUserPanel">
-                <p class="admin-only-note">Admins can create user accounts here. Managers can view users only.</p>
+                <div class="admin-user-panel-header">
+                    <div>
+                        <h3>Add a staff member</h3>
+                        <p>Create an account and send access instructions from one place.</p>
+                    </div>
+                </div>
                 <div class="admin-user-form">
                     <input type="text" id="newUserFullName" placeholder="Full Name">
                     <input type="email" id="newUserEmail" placeholder="Email Address">
@@ -3570,25 +3904,27 @@
                     <button type="button" onclick="adminCreateUser()" id="createUserBtn">Add User</button>
                     <button type="button" class="resend-welcome-btn" onclick="adminResendAllWelcomeEmails()" id="resendAllWelcomeBtn">Resend Welcome Emails to All Active Users</button>
                 </div>
-                <p class="danger-note">New and resent welcome emails include a fresh password-setup link from notifications@command.myjammindjs.com. Share the initial password only through an approved secure channel if it is needed as a fallback.</p>
+                <p class="danger-note">Welcome emails contain a fresh secure password-setup link and are sent from notifications@command.myjammindjs.com.</p>
+            </div>
+
+            <div class="users-toolbar">
+                <input type="search" id="usersSearchInput" placeholder="Search name, email, phone, or city" oninput="renderUserCards()">
+                <select id="usersRoleFilter" onchange="renderUserCards()">
+                    <option value="all">All roles</option>
+                    <option value="user">Users</option>
+                    <option value="manager">Managers</option>
+                    <option value="admin">Admins</option>
+                </select>
+                <select id="usersStatusFilter" onchange="renderUserCards()">
+                    <option value="all">All statuses</option>
+                    <option value="active">Active</option>
+                    <option value="deletion_scheduled">Deletion scheduled</option>
+                    <option value="disabled">Disabled</option>
+                </select>
             </div>
 
             <div id="usersLoading" class="loading">Loading users</div>
-            <table id="usersTableContent" class="hidden">
-                <thead>
-                    <tr>
-                        <th>Email</th>
-                        <th>Name</th>
-                        <th>Phone</th>
-                        <th>City/State</th>
-                        <th>Role</th>
-                        <th>Account Status</th>
-                        <th>Permanent Deletion</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="usersBody"></tbody>
-            </table>
+            <div id="usersGrid" class="users-grid hidden"></div>
         </div>
 
     </div>
@@ -6173,23 +6509,144 @@
             return 'user-status-active';
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function getUserInitials(user) {
+            const source = String(user?.full_name || user?.email || 'U').trim();
+            const parts = source.split(/\s+/).filter(Boolean);
+            if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            return source.slice(0, 2).toUpperCase();
+        }
+
+        function togglePasswordResetPanel(userId) {
+            const panel = document.getElementById(`resetPanel_${userId}`);
+            if (panel) panel.classList.toggle('hidden');
+        }
+
+        function updateUserDashboardStats() {
+            const total = users.length;
+            const active = users.filter(u => (u.status || 'active') === 'active').length;
+            const admins = users.filter(u => u.role === 'admin' && (u.status || 'active') === 'active').length;
+            const totalEl = document.getElementById('usersStatTotal');
+            const activeEl = document.getElementById('usersStatActive');
+            const adminsEl = document.getElementById('usersStatAdmins');
+            if (totalEl) totalEl.textContent = total;
+            if (activeEl) activeEl.textContent = active;
+            if (adminsEl) adminsEl.textContent = admins;
+        }
+
+        function renderUserCards() {
+            const grid = document.getElementById('usersGrid');
+            if (!grid) return;
+
+            const query = String(document.getElementById('usersSearchInput')?.value || '').trim().toLowerCase();
+            const roleFilter = document.getElementById('usersRoleFilter')?.value || 'all';
+            const statusFilter = document.getElementById('usersStatusFilter')?.value || 'all';
+
+            const filtered = users.filter(u => {
+                const status = u.status || 'active';
+                const haystack = [u.full_name, u.email, u.phone, u.city, u.state].filter(Boolean).join(' ').toLowerCase();
+                return (!query || haystack.includes(query)) &&
+                    (roleFilter === 'all' || u.role === roleFilter) &&
+                    (statusFilter === 'all' || status === statusFilter);
+            });
+
+            grid.innerHTML = filtered.map(u => {
+                const status = u.status || 'active';
+                const deletionScheduled = status === 'deletion_scheduled';
+                const deletionDate = formatUserDeletionDate(u.deletion_scheduled_at);
+                const isCurrentUser = u.id === currentUser.id;
+                const encodedEmail = encodeURIComponent(String(u.email || ''));
+                const location = [u.city, u.state].filter(Boolean).join(', ') || 'Not provided';
+                const phone = u.phone || 'Not provided';
+
+                return `
+                <article class="user-card">
+                    <div class="user-card-main">
+                        <div class="user-card-top">
+                            <div class="user-identity">
+                                <div class="user-avatar">${getUserInitials(u)}</div>
+                                <div>
+                                    <div class="user-card-name">${escapeHtml(u.full_name || 'Unnamed Staff Member')}</div>
+                                    <div class="user-card-email">${escapeHtml(u.email || 'No email')}</div>
+                                </div>
+                            </div>
+                            <span class="user-status-badge ${getUserStatusClass(u)}">${getUserStatusLabel(u)}</span>
+                        </div>
+
+                        <div class="user-card-details">
+                            <div class="user-detail">
+                                <span class="user-detail-label">Phone</span>
+                                <span class="user-detail-value">${escapeHtml(phone)}</span>
+                            </div>
+                            <div class="user-detail">
+                                <span class="user-detail-label">Location</span>
+                                <span class="user-detail-value">${escapeHtml(location)}</span>
+                            </div>
+                            <div class="user-detail">
+                                <span class="user-detail-label">Access Level</span>
+                                <span class="user-detail-value">
+                                    ${canManageUsers() ? `
+                                        <select class="user-role-select" onchange="adminUpdateUserRole('${u.id}', this.value)" ${deletionScheduled ? 'disabled' : ''}>
+                                            <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
+                                            <option value="manager" ${u.role === 'manager' ? 'selected' : ''}>Manager</option>
+                                            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+                                        </select>
+                                    ` : escapeHtml(u.role || 'user')}
+                                </span>
+                            </div>
+                            <div class="user-detail">
+                                <span class="user-detail-label">Account</span>
+                                <span class="user-detail-value">${deletionScheduled ? `Deletes ${escapeHtml(deletionDate || 'after 30 days')}` : 'In good standing'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    ${canManageUsers() ? `
+                        <div class="user-card-actions">
+                            ${deletionScheduled ? `
+                                <button class="action-btn cancel-delete-btn" onclick="adminCancelUserDeletion('${u.id}', decodeURIComponent('${encodedEmail}'))">Cancel Scheduled Deletion</button>
+                            ` : `
+                                <button class="action-btn edit-staff-btn" onclick="openEditUserModal('${u.id}')">Edit Staff</button>
+                                <button id="resendWelcome_${u.id}" class="action-btn resend-welcome-btn" onclick="adminResendWelcomeEmail('${u.id}', decodeURIComponent('${encodedEmail}'))">Resend Welcome</button>
+                                <button class="action-btn reset-toggle-btn" onclick="togglePasswordResetPanel('${u.id}')">Reset Password</button>
+                                <div id="resetPanel_${u.id}" class="password-reset-panel hidden">
+                                    <input type="password" id="resetPass_${u.id}" placeholder="New temporary password" autocomplete="new-password">
+                                    <button class="action-btn approve-btn" onclick="adminResetUserPassword('${u.id}', decodeURIComponent('${encodedEmail}'))">Save</button>
+                                </div>
+                                ${!isCurrentUser ? `<button class="action-btn delete-btn" onclick="adminScheduleUserDeletion('${u.id}', decodeURIComponent('${encodedEmail}'), '${u.role || 'user'}')">Schedule Account Deletion</button>` : ''}
+                            `}
+                        </div>
+                    ` : ''}
+                </article>`;
+            }).join('') || '<div class="users-empty-state">No staff members match the current search or filters.</div>';
+
+            grid.classList.remove('hidden');
+        }
+
         async function loadUsers() {
             if (!canViewAll()) return;
 
             const usersTableWrapper = document.getElementById('usersTable');
             const loading = usersTableWrapper.querySelector('#usersLoading');
-            const table = usersTableWrapper.querySelector('#usersTableContent');
-            const body = usersTableWrapper.querySelector('#usersBody');
+            const grid = usersTableWrapper.querySelector('#usersGrid');
 
             if (loading) loading.classList.remove('hidden');
-            if (table) table.classList.add('hidden');
+            if (grid) grid.classList.add('hidden');
 
             try {
                 const { data, error } = await withTimeout(
                     supabaseClient
                         .from('profiles')
                         .select('*')
-                        .order('email', { ascending: true }),
+                        .order('full_name', { ascending: true }),
                     12000,
                     'Loading users'
                 );
@@ -6197,60 +6654,10 @@
                 if (error) throw error;
 
                 users = data || [];
-
-                body.innerHTML = users.map(u => {
-                    const status = u.status || 'active';
-                    const deletionScheduled = status === 'deletion_scheduled';
-                    const deletionDate = formatUserDeletionDate(u.deletion_scheduled_at);
-                    const isCurrentUser = u.id === currentUser.id;
-                    const encodedEmail = encodeURIComponent(String(u.email || ''));
-
-                    return `
-                    <tr>
-                        <td>${u.email || '-'}</td>
-                        <td>${u.full_name || '-'}</td>
-                        <td>${u.phone || '-'}</td>
-                        <td>${[u.city, u.state].filter(Boolean).join(', ') || '-'}</td>
-                        <td>
-                            ${canManageUsers() ? `
-                                <select onchange="adminUpdateUserRole('${u.id}', this.value)" ${deletionScheduled ? 'disabled' : ''}>
-                                    <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
-                                    <option value="manager" ${u.role === 'manager' ? 'selected' : ''}>Manager</option>
-                                    <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
-                                </select>
-                            ` : `${u.role || 'user'}`}
-                        </td>
-                        <td>
-                            <span class="user-status-badge ${getUserStatusClass(u)}">${getUserStatusLabel(u)}</span>
-                        </td>
-                        <td>
-                            ${deletionScheduled
-                                ? `<div class="scheduled-delete-date">Deletes permanently<br><strong>${deletionDate || '30 days after scheduling'}</strong></div>`
-                                : '-'}
-                        </td>
-                        <td>
-                            ${canManageUsers() ? `
-                                ${deletionScheduled ? `
-                                    <div class="user-action-stack">
-                                        <button class="action-btn cancel-delete-btn" onclick="adminCancelUserDeletion('${u.id}', decodeURIComponent('${encodedEmail}'))">Cancel Deletion</button>
-                                    </div>
-                                ` : `
-                                    <div class="user-action-stack">
-                                        <button class="action-btn btn-secondary" onclick="openEditUserModal('${u.id}')">Edit Staff</button>
-                                        <button id="resendWelcome_${u.id}" class="action-btn resend-welcome-btn" onclick="adminResendWelcomeEmail('${u.id}', decodeURIComponent('${encodedEmail}'))">Resend Welcome Email</button>
-                                        <input type="password" id="resetPass_${u.id}" placeholder="New temp password" autocomplete="new-password">
-                                        <button class="action-btn approve-btn" onclick="adminResetUserPassword('${u.id}', decodeURIComponent('${encodedEmail}'))">Reset Password</button>
-                                        ${!isCurrentUser ? `<button class="action-btn delete-btn" onclick="adminScheduleUserDeletion('${u.id}', decodeURIComponent('${encodedEmail}'), '${u.role || 'user'}')">Schedule Deletion</button>` : ''}
-                                    </div>
-                                `}
-                            ` : '-'}
-                        </td>
-                    </tr>`;
-                }).join('') || '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #888;">No users found</td></tr>';
+                updateUserDashboardStats();
+                renderUserCards();
 
                 if (loading) loading.classList.add('hidden');
-                if (table) table.classList.remove('hidden');
-
             } catch (error) {
                 console.error('Load users error:', error);
                 showError('Failed to load users: ' + error.message);
