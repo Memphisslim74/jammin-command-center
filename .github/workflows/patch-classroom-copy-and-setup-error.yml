@@ -85,3 +85,5 @@ jobs:
           git add google-classroom-integration.js dj-training.js supabase/RUN_THIS_ONCE_GOOGLE_CLASSROOM.sql
           git commit -m "Use generic Classroom copy and clarify database setup"
           git push origin HEAD:main
+
+# Trigger after initial workflow creation.
