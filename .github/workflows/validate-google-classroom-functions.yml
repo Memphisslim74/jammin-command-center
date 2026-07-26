@@ -1,0 +1,36 @@
+name: Validate Google Classroom functions
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/validate-google-classroom-functions.yml
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v2.x
+      - name: Validate source files
+        run: |
+          node --check google-classroom-integration.js
+          deno check --no-lock supabase/functions/google-classroom-auth/index.ts
+          deno check --no-lock supabase/functions/google-classroom-sync/index.ts
+      - name: Record successful validation
+        run: |
+          printf 'Google Classroom integration validated successfully.\n' > supabase/functions/GOOGLE_CLASSROOM_VALIDATED.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase/functions/GOOGLE_CLASSROOM_VALIDATED.txt
+          git commit -m "Validate Google Classroom integration functions"
+          git push origin HEAD:main
