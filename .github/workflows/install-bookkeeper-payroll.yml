@@ -1,0 +1,36 @@
+name: Install Bookkeeper Payroll Workspace
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - scripts/install_bookkeeper_payroll.py
+      - .github/workflows/install-bookkeeper-payroll.yml
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Command Center
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Install payroll workspace
+        run: python3 scripts/install_bookkeeper_payroll.py
+
+      - name: Validate payroll JavaScript
+        run: node --check bookkeeper-payroll.js
+
+      - name: Commit payroll workspace
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html bookkeeper-payroll.js
+          git diff --cached --quiet || git commit -m "Add dedicated bookkeeper payroll workspace"
+          git push origin HEAD:main
