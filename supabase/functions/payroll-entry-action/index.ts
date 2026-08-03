@@ -6,14 +6,16 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const sourceConfig: Record<string, {
+type SourceConfig = {
   table: string;
   label: string;
   nameField: string;
   dateField: string;
   detailsField: string;
   amount: (record: Record<string, unknown>) => string;
-}> = {
+};
+
+const sourceConfig: Record<string, SourceConfig> = {
   commission: {
     table: "commissions",
     label: "Commission",
@@ -105,40 +107,46 @@ function denialEmail(params: {
     </div>`;
 }
 
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const PROJECT_URL = Deno.env.get("PROJECT_URL") || Deno.env.get("SUPABASE_URL");
-    const PROJECT_ANON_KEY = Deno.env.get("PROJECT_ANON_KEY") || Deno.env.get("SUPABASE_ANON_KEY");
-    const PROJECT_SERVICE_ROLE_KEY = Deno.env.get("PROJECT_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    const FROM_EMAIL = Deno.env.get("COMMAND_CENTER_FROM_EMAIL") || "JAMMIN' Command Center <notifications@command.myjammindjs.com>";
-    const APP_URL = Deno.env.get("COMMAND_CENTER_URL") || "https://jdjcommand.myjammindjs.com";
+    const projectUrl = Deno.env.get("PROJECT_URL") || Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("PROJECT_ANON_KEY") || Deno.env.get("SUPABASE_ANON_KEY");
+    const serviceRoleKey = Deno.env.get("PROJECT_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const fromEmail = Deno.env.get("COMMAND_CENTER_FROM_EMAIL") || "JAMMIN' Command Center <notifications@command.myjammindjs.com>";
+    const appUrl = Deno.env.get("COMMAND_CENTER_URL") || "https://jdjcommand.myjammindjs.com";
 
-    if (!PROJECT_URL || !PROJECT_ANON_KEY || !PROJECT_SERVICE_ROLE_KEY) {
-      throw new Error("Missing Supabase function secrets.");
-    }
+    if (!projectUrl || !anonKey || !serviceRoleKey) throw new Error("Missing Supabase function secrets.");
 
     const authHeader = req.headers.get("Authorization") || "";
-    const userClient = createClient(PROJECT_URL, PROJECT_ANON_KEY, {
+    const userClient = createClient(projectUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const adminClient = createClient(PROJECT_URL, PROJECT_SERVICE_ROLE_KEY);
+    const adminClient = createClient(projectUrl, serviceRoleKey);
 
     const { data: { user }, error: userError } = await userClient.auth.getUser();
     if (userError || !user) throw new Error("Not authenticated.");
 
     const { data: requester, error: requesterError } = await adminClient
       .from("profiles")
-      .select("id, role, status")
+      .select("id, role, status, payroll_access")
       .eq("id", user.id)
       .single();
 
     if (requesterError) throw requesterError;
-    if (!["admin", "manager"].includes(requester.role) || (requester.status || "active") !== "active") {
+
+    const isActive = (requester.status || "active") === "active";
+    const hasPayrollAccess = requester.role === "admin" || requester.payroll_access === true;
+    if (!isActive || !hasPayrollAccess) {
       throw new Error("You do not have permission to manage payroll.");
     }
 
@@ -185,15 +193,7 @@ Deno.serve(async (req) => {
     if (updateError) throw updateError;
 
     if (action === "approve") {
-      return new Response(JSON.stringify({
-        success: true,
-        action,
-        status,
-        source_type: sourceType,
-        source_id: sourceId,
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ success: true, action, status, source_type: sourceType, source_id: sourceId });
     }
 
     let submitterEmail = "";
@@ -210,17 +210,17 @@ Deno.serve(async (req) => {
       submitterName = submitterProfile?.full_name || submitterName;
     }
 
-    if (!submitterEmail || !RESEND_API_KEY) {
-      return new Response(JSON.stringify({
+    if (!submitterEmail || !resendApiKey) {
+      return jsonResponse({
         success: true,
         action,
         status,
         source_type: sourceType,
         source_id: sourceId,
         email_sent: false,
-        email_error: !submitterEmail ? "The submitter email could not be found." : "The Resend API key is not configured.",
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        email_error: !submitterEmail
+          ? "The submitter email could not be found."
+          : "The Resend API key is not configured.",
       });
     }
 
@@ -231,11 +231,11 @@ Deno.serve(async (req) => {
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${resendApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: FROM_EMAIL,
+        from: fromEmail,
         to: [submitterEmail],
         subject: `Payroll submission denied — ${config.label} on ${record[config.dateField] || ""}`,
         html: denialEmail({
@@ -246,14 +246,14 @@ Deno.serve(async (req) => {
           amount: config.amount(record),
           notes: String(record.notes || ""),
           reason,
-          appUrl: APP_URL,
+          appUrl,
         }),
       }),
     });
 
     const emailResult = await emailResponse.json();
     if (!emailResponse.ok) {
-      return new Response(JSON.stringify({
+      return jsonResponse({
         success: true,
         action,
         status,
@@ -261,12 +261,10 @@ Deno.serve(async (req) => {
         source_id: sourceId,
         email_sent: false,
         email_error: JSON.stringify(emailResult),
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({
+    return jsonResponse({
       success: true,
       action,
       status,
@@ -275,16 +273,11 @@ Deno.serve(async (req) => {
       email_sent: true,
       email_id: emailResult.id,
       recipient: submitterEmail,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("Payroll entry action error:", error);
-    return new Response(JSON.stringify({
+    return jsonResponse({
       error: error instanceof Error ? error.message : String(error),
-    }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    }, 400);
   }
 });
