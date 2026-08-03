@@ -1,0 +1,38 @@
+name: Deploy Payroll Action Function
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - supabase/functions/payroll-entry-action/**
+      - supabase/config.toml
+      - .github/workflows/deploy-payroll-action.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: rndcrsjiaqaoendbhqec
+    steps:
+      - name: Check out Command Center
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: latest
+
+      - name: Confirm deployment token exists
+        shell: bash
+        run: test -n "$SUPABASE_ACCESS_TOKEN"
+
+      - name: Deploy payroll approval and denial service
+        run: supabase functions deploy payroll-entry-action --project-ref "$PROJECT_REF" --no-verify-jwt
