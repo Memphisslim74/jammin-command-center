@@ -228,7 +228,7 @@
             chart.appendChild(wrap);
             button = wrap.querySelector('button');
         }
-        if (button) button.textContent = 'View My Submissions';
+        if (button && !button.textContent.trim()) button.textContent = 'View My Submissions';
     }
 
     function render() {

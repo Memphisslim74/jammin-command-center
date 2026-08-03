@@ -35,10 +35,14 @@
             tabs.insertBefore(button, usersTab || payrollTab || null);
         }
 
-        button.classList.remove('hidden');
-        button.style.display = '';
-        button.textContent = role() === 'user' ? 'My Training' : 'DJ Training';
-        button.setAttribute('aria-label', role() === 'user' ? 'Open my training record' : 'Open DJ training management');
+        if (button.classList.contains('hidden')) button.classList.remove('hidden');
+        if (button.style.display === 'none') button.style.display = '';
+
+        const desiredText = role() === 'user' ? 'My Training' : 'DJ Training';
+        if (button.textContent !== desiredText) button.textContent = desiredText;
+
+        const desiredLabel = role() === 'user' ? 'Open my training record' : 'Open DJ training management';
+        if (button.getAttribute('aria-label') !== desiredLabel) button.setAttribute('aria-label', desiredLabel);
         return true;
     }
 
@@ -48,9 +52,7 @@
         observer = new MutationObserver(() => ensureTrainingButton());
         observer.observe(document.documentElement, {
             childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['class']
+            subtree: true
         });
 
         interval = setInterval(() => {
