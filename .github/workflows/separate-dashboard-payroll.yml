@@ -1,0 +1,38 @@
+name: Separate Dashboard and Payroll
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - scripts/separate_dashboard_from_payroll.py
+      - .github/workflows/separate-dashboard-payroll.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Command Center
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Separate dashboard from payroll
+        run: python3 scripts/separate_dashboard_from_payroll.py
+
+      - name: Validate payroll JavaScript
+        run: node --check bookkeeper-payroll.js
+
+      - name: Commit validated dashboard separation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bookkeeper-payroll.js
+          if ! git diff --cached --quiet; then
+            git commit -m "Keep accounting workspace on Staff Payroll only"
+            git push origin HEAD:main
+          fi
