@@ -3,3 +3,6 @@ verify_jwt = false
 
 [functions.google-classroom-sync]
 verify_jwt = false
+
+[functions.payroll-entry-action]
+verify_jwt = false
