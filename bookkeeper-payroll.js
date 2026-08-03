@@ -521,6 +521,9 @@
         const style = document.createElement('style');
         style.id = 'bookkeeperPayrollStyles';
         style.textContent = `
+            .bookkeeper-payroll-panel.hidden {
+                display: none !important;
+            }
             .bookkeeper-payroll-panel {
                 display: grid;
                 gap: 18px;
@@ -562,6 +565,25 @@
                 font-size: 12px;
                 letter-spacing: .11em;
                 text-transform: uppercase;
+            }
+            .bk-dashboard-submission-action {
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                gap: 10px;
+                margin-top: 18px;
+                padding-top: 16px;
+                border-top: 1px solid rgba(255,255,255,.08);
+            }
+            .bk-dashboard-submission-action button {
+                min-height: 42px;
+                padding: 10px 18px;
+            }
+            .bk-dashboard-submission-note {
+                margin-right: auto;
+                color: #998da3;
+                font-size: 12px;
+                line-height: 1.4;
             }
             .bk-period-status {
                 padding: 8px 12px;
@@ -1904,9 +1926,77 @@
         render();
     }
 
+    function activeTabName() {
+        const activeTab = document.querySelector('.tab.active');
+        const onclickValue = activeTab?.getAttribute('onclick') || '';
+        const match = onclickValue.match(/switchTab\('([^']+)'\)/);
+        return match?.[1] || '';
+    }
+
+    function ensureDashboardSubmissionAction() {
+        const card = document.getElementById('submissionChartCard');
+        if (!card) return;
+
+        let action = document.getElementById('bkDashboardSubmissionAction');
+        if (!action) {
+            action = document.createElement('div');
+            action.id = 'bkDashboardSubmissionAction';
+            action.className = 'bk-dashboard-submission-action';
+            action.innerHTML = `
+                <span class="bk-dashboard-submission-note">The dashboard is a summary. Open the submission records to review individual entries.</span>
+                <button type="button" id="bkViewSubmissionsBtn">View My Submissions</button>
+            `;
+            card.appendChild(action);
+
+            action.querySelector('#bkViewSubmissionsBtn')?.addEventListener('click', () => {
+                if (typeof switchTab === 'function') {
+                    switchTab('commissions');
+                    setTimeout(() => {
+                        document.getElementById('commissionsTable')?.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }, 50);
+                }
+            });
+        }
+
+        const button = action.querySelector('#bkViewSubmissionsBtn');
+        if (button) {
+            button.textContent = getCurrentProfile()?.role === 'user'
+                ? 'View My Submissions'
+                : 'View Submission Records';
+        }
+    }
+
+    function enforceDashboardPayrollSeparation() {
+        const activeTab = activeTabName();
+        const payrollPanel = getPanel();
+        const dashboardTotals = document.getElementById('dashboardTotalsCard');
+
+        // The detailed accounting workspace belongs only on the Staff Payroll page.
+        if (payrollPanel && activeTab !== 'payroll') {
+            payrollPanel.classList.add('hidden');
+        }
+
+        // The home dashboard keeps only the submission graph, not payroll amount cards.
+        if (dashboardTotals) {
+            dashboardTotals.classList.add('hidden');
+        }
+
+        ensureDashboardSubmissionAction();
+    }
+
     function initialize() {
         setupMarkup();
         state.initialized = true;
+        enforceDashboardPayrollSeparation();
+
+        document.addEventListener('click', event => {
+            if (event.target.closest('.tab')) {
+                setTimeout(enforceDashboardPayrollSeparation, 0);
+            }
+        });
 
         const payrollTab = document.getElementById('payrollTab');
         payrollTab?.addEventListener('click', () => setTimeout(() => open(true), 0));
@@ -1920,6 +2010,7 @@
         }
 
         state.interval = setInterval(() => {
+            enforceDashboardPayrollSeparation();
             if (!isPanelVisible() || state.loading) return;
             const nextFingerprint = fingerprint();
             if (nextFingerprint !== state.lastFingerprint) render();
