@@ -34,3 +34,5 @@ jobs:
           git add index.html bookkeeper-payroll.js
           git diff --cached --quiet || git commit -m "Add dedicated bookkeeper payroll workspace"
           git push origin HEAD:main
+
+# Triggered after the installer and workflow were both present on main.
