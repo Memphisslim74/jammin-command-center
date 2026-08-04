@@ -3,7 +3,15 @@
 
     const PANEL_ID = 'mySubmissionsPanel';
     const STYLE_ID = 'mySubmissionsStyles';
-    let initialized = false;
+
+    const state = {
+        initialized: false,
+        periodsLoaded: false,
+        loadingPeriods: false,
+        periods: [],
+        selectedPeriodId: '',
+        periodError: ''
+    };
 
     const safeNumber = value => {
         const number = Number(value || 0);
@@ -31,6 +39,11 @@
 
     function getProfile() {
         try { return typeof currentProfile !== 'undefined' ? currentProfile : null; }
+        catch { return null; }
+    }
+
+    function getClient() {
+        try { return typeof supabaseClient !== 'undefined' ? supabaseClient : null; }
         catch { return null; }
     }
 
@@ -128,6 +141,51 @@
         return entries.sort((a, b) => String(b.date).localeCompare(String(a.date)));
     }
 
+    function selectedPeriod() {
+        return state.periods.find(period => String(period.id) === String(state.selectedPeriodId)) || null;
+    }
+
+    function entriesForSelectedPeriod() {
+        const period = selectedPeriod();
+        if (!period) return [];
+        const start = String(period.start_date || '').slice(0, 10);
+        const end = String(period.end_date || '').slice(0, 10);
+        return collectEntries().filter(entry => entry.date >= start && entry.date <= end);
+    }
+
+    async function loadPeriods(force = false) {
+        if (state.loadingPeriods) return;
+        if (state.periodsLoaded && !force) return;
+
+        const client = getClient();
+        if (!client || !getUser()) return;
+
+        state.loadingPeriods = true;
+        state.periodError = '';
+
+        try {
+            const { data, error } = await client.rpc('get_visible_payroll_periods');
+            if (error) throw error;
+
+            state.periods = Array.isArray(data) ? data : [];
+            state.periodsLoaded = true;
+
+            const selectedStillExists = state.periods.some(period => String(period.id) === String(state.selectedPeriodId));
+            if (!selectedStillExists) {
+                const active = state.periods.find(period => period.is_active) || state.periods[0] || null;
+                state.selectedPeriodId = active?.id || '';
+            }
+        } catch (error) {
+            console.error('Personal payroll period load failed:', error);
+            state.periods = [];
+            state.selectedPeriodId = '';
+            state.periodsLoaded = false;
+            state.periodError = 'Payroll period totals are not available yet. The payroll-period access update still needs to be applied.';
+        } finally {
+            state.loadingPeriods = false;
+        }
+    }
+
     function summarize(entries) {
         return entries.reduce((summary, entry) => {
             summary.total += entry.amount;
@@ -164,6 +222,11 @@
         return new Date(year, month - 1, day).toLocaleDateString();
     }
 
+    function periodLabel(period) {
+        if (!period) return 'No payroll period selected';
+        return `${formatDate(String(period.start_date || '').slice(0, 10))} – ${formatDate(String(period.end_date || '').slice(0, 10))}`;
+    }
+
     function injectStyles() {
         if (document.getElementById(STYLE_ID)) return;
         const style = document.createElement('style');
@@ -174,6 +237,10 @@
             .my-submissions-header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding:20px; border:1px solid rgba(233,30,140,.24); border-radius:16px; background:linear-gradient(145deg,rgba(49,31,64,.98),rgba(32,23,43,.98)); }
             .my-submissions-header h2 { margin:0 0 5px; color:#fff; }
             .my-submissions-header p { margin:0; color:#b9adc5; line-height:1.5; }
+            .my-submissions-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:flex-end; gap:10px; }
+            .my-submissions-period { display:grid; gap:5px; min-width:260px; color:#b9adc5; font-size:12px; font-weight:800; }
+            .my-submissions-period select { min-height:42px; border:1px solid rgba(255,255,255,.14); border-radius:8px; background:rgba(10,7,14,.68); color:#fff; padding:0 10px; }
+            .my-submissions-notice { padding:14px 16px; border-radius:11px; border:1px solid rgba(245,158,11,.34); background:rgba(245,158,11,.10); color:#ffe0a3; line-height:1.5; }
             .my-submissions-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:11px; }
             .my-submissions-card { padding:16px; border-radius:13px; border:1px solid rgba(255,255,255,.09); background:rgba(42,29,55,.84); }
             .my-submissions-card span { display:block; color:#a99bb5; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:.05em; }
@@ -200,8 +267,8 @@
             .my-submission-status.approved { color:#8cf0c6; background:rgba(16,185,129,.13); }
             .my-submission-status.denied { color:#fecaca; background:rgba(239,68,68,.13); }
             .my-submissions-empty { text-align:center; color:#a99bb5; padding:42px 20px; border:1px dashed rgba(255,255,255,.13); border-radius:13px; }
-            @media(max-width:900px){ .my-submissions-summary,.my-submissions-breakdown{grid-template-columns:repeat(2,minmax(0,1fr));}.my-submission-row{grid-template-columns:repeat(2,minmax(0,1fr));}.my-submission-row>div:nth-child(3){grid-column:1/-1;}.my-submission-amount{text-align:left;} }
-            @media(max-width:560px){ .my-submissions-header{flex-direction:column;}.my-submissions-summary,.my-submissions-breakdown,.my-submission-row{grid-template-columns:1fr;}.my-submission-row>div:nth-child(3){grid-column:1;} }
+            @media(max-width:900px){ .my-submissions-header{flex-direction:column;}.my-submissions-actions{width:100%;justify-content:flex-start;}.my-submissions-summary,.my-submissions-breakdown{grid-template-columns:repeat(2,minmax(0,1fr));}.my-submission-row{grid-template-columns:repeat(2,minmax(0,1fr));}.my-submission-row>div:nth-child(3){grid-column:1/-1;}.my-submission-amount{text-align:left;} }
+            @media(max-width:560px){ .my-submissions-period{width:100%;min-width:0;}.my-submissions-summary,.my-submissions-breakdown,.my-submission-row{grid-template-columns:1fr;}.my-submission-row>div:nth-child(3){grid-column:1;} }
         `;
         document.head.appendChild(style);
     }
@@ -224,7 +291,7 @@
         if (!button) {
             const wrap = document.createElement('div');
             wrap.className = 'bk-dashboard-submission-action';
-            wrap.innerHTML = '<span class="bk-dashboard-submission-note">Open one page to review every submission and amount.</span><button type="button" id="bkViewSubmissionsBtn">View My Submissions</button>';
+            wrap.innerHTML = '<span class="bk-dashboard-submission-note">Open your totals for one payroll period.</span><button type="button" id="bkViewSubmissionsBtn">View My Submissions</button>';
             chart.appendChild(wrap);
             button = wrap.querySelector('button');
         }
@@ -234,22 +301,39 @@
     function render() {
         const panel = ensurePanel();
         if (!panel) return;
-        const entries = collectEntries();
+
+        const period = selectedPeriod();
+        const entries = entriesForSelectedPeriod();
         const summary = summarize(entries);
+        const periodOptions = state.periods.map(item => {
+            const status = item.is_active ? 'Current' : item.status === 'finalized' ? 'Finalized' : 'Open';
+            const label = item.label || periodLabel(item);
+            return `<option value="${escapeHtml(item.id)}" ${String(item.id) === String(state.selectedPeriodId) ? 'selected' : ''}>${escapeHtml(label)} • ${escapeHtml(status)}</option>`;
+        }).join('');
 
         panel.innerHTML = `
             <div class="my-submissions-header">
                 <div>
                     <h2>My Submissions</h2>
-                    <p>Review your show pay, commissions, management hours, and equipment hours in one place.</p>
+                    <p>${period ? `Your totals for ${escapeHtml(periodLabel(period))}.` : 'Your totals for one payroll period.'}</p>
                 </div>
-                <button type="button" id="closeMySubmissions" class="btn-secondary">Back to Dashboard</button>
+                <div class="my-submissions-actions">
+                    <label class="my-submissions-period">
+                        <span>Payroll Period</span>
+                        <select id="mySubmissionsPeriodSelect" ${state.periods.length ? '' : 'disabled'}>
+                            ${periodOptions || '<option value="">No payroll periods available</option>'}
+                        </select>
+                    </label>
+                    <button type="button" id="refreshMySubmissions" class="btn-secondary">Refresh</button>
+                    <button type="button" id="closeMySubmissions" class="btn-secondary">Back to Dashboard</button>
+                </div>
             </div>
+            ${state.periodError ? `<div class="my-submissions-notice">${escapeHtml(state.periodError)}</div>` : ''}
             <div class="my-submissions-summary">
                 <article class="my-submissions-card pending"><span>Pending Total</span><strong>${money(summary.pending)}</strong><small>${summary.pendingCount} pending</small></article>
                 <article class="my-submissions-card approved"><span>Approved Total</span><strong>${money(summary.approved)}</strong><small>${summary.approvedCount} approved</small></article>
                 <article class="my-submissions-card denied"><span>Denied Total</span><strong>${money(summary.denied)}</strong><small>${summary.deniedCount} denied</small></article>
-                <article class="my-submissions-card"><span>Total Submitted</span><strong>${money(summary.total)}</strong><small>${summary.count} submissions</small></article>
+                <article class="my-submissions-card"><span>Period Total</span><strong>${money(summary.total)}</strong><small>${summary.count} submissions</small></article>
             </div>
             <div class="my-submissions-breakdown">
                 <div><span>Show Pay</span><strong>${money(summary.types.Show)}</strong></div>
@@ -271,15 +355,24 @@
                             <div><span class="my-submission-label">Amount</span><div class="my-submission-amount">${money(entry.amount)}</div></div>
                             <div><span class="my-submission-label">Status</span><span class="my-submission-status ${escapeHtml(statusClass)}">${escapeHtml(entry.status)}</span></div>
                         </article>`;
-                }).join('') : '<div class="my-submissions-empty">No submissions have been found for your account.</div>'}
+                }).join('') : `<div class="my-submissions-empty">${period ? 'No submissions were found for your account in this payroll period.' : 'No payroll period is currently available.'}</div>`}
             </div>`;
 
         panel.querySelector('#closeMySubmissions')?.addEventListener('click', close);
+        panel.querySelector('#refreshMySubmissions')?.addEventListener('click', async () => {
+            await loadPeriods(true);
+            render();
+        });
+        panel.querySelector('#mySubmissionsPeriodSelect')?.addEventListener('change', event => {
+            state.selectedPeriodId = event.target.value || '';
+            render();
+        });
     }
 
-    function open() {
+    async function open() {
         if (!getUser() || !getProfile()) return;
         ensurePanel();
+        await loadPeriods();
         render();
         if (typeof switchTab === 'function') switchTab('dashboard');
         document.getElementById('submissionChartCard')?.classList.add('hidden');
@@ -295,8 +388,8 @@
     }
 
     function initialize() {
-        if (initialized) return;
-        initialized = true;
+        if (state.initialized) return;
+        state.initialized = true;
         injectStyles();
         ensurePanel();
         ensureButton();
@@ -306,7 +399,7 @@
             if (viewButton) {
                 event.preventDefault();
                 event.stopImmediatePropagation();
-                open();
+                void open();
                 return;
             }
 
@@ -318,7 +411,7 @@
         observer.observe(document.documentElement, { childList: true, subtree: true });
     }
 
-    window.MySubmissions = { open, close, render };
+    window.MySubmissions = { open, close, render, refreshPeriods: () => loadPeriods(true) };
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
     else initialize();
