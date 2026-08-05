@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="JAMMIN J">
+  <defs>
+    <linearGradient id="j" x1="10" y1="8" x2="52" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff4daf"/>
+      <stop offset="0.58" stop-color="#e91e8c"/>
+      <stop offset="1" stop-color="#764ba2"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#31143f" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#1d1226"/>
+  <path d="M19 9h30v9H37v23.5C37 51.8 31.1 57 21.8 57 14.3 57 9 53.4 7 47.2l9.4-4.2c.9 3.2 2.7 4.8 5.4 4.8 3.1 0 4.8-2.1 4.8-6.4V18H19V9Z" fill="url(#j)" filter="url(#shadow)"/>
+  <path d="M19 9h30v3H19z" fill="#ff9ad0" opacity="0.55"/>
+</svg>
