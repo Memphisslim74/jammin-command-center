@@ -17,7 +17,7 @@
 
         if (!document.querySelector('script[data-jammin-theme-polish]')) {
             const polish = document.createElement('script');
-            polish.src = 'theme-polish.js?v=20260805-2';
+            polish.src = 'theme-polish.js?v=20260805-3';
             polish.dataset.jamminThemePolish = 'true';
             polish.async = false;
             polish.onerror = () => console.error('The Command Center light-theme fixes could not be loaded.');
