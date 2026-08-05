@@ -5,6 +5,17 @@
     let observer = null;
     let interval = null;
 
+    function loadTheme() {
+        if (window.JamminTheme || document.querySelector('script[data-jammin-theme]')) return;
+
+        const script = document.createElement('script');
+        script.src = 'theme.js?v=20260805';
+        script.dataset.jamminTheme = 'true';
+        script.async = false;
+        script.onerror = () => console.error('The Command Center theme could not be loaded.');
+        document.head.appendChild(script);
+    }
+
     function profile() {
         try { return typeof currentProfile !== 'undefined' ? currentProfile : null; }
         catch { return null; }
@@ -73,6 +84,7 @@
     }
 
     function start() {
+        loadTheme();
         ensureTrainingButton();
 
         document.addEventListener('click', event => {
@@ -95,11 +107,13 @@
         });
 
         interval = setInterval(() => {
+            loadTheme();
             const ready = ensureTrainingButton();
             enforcePayrollAccess();
             if (ready && profile()) {
                 clearInterval(interval);
                 interval = setInterval(() => {
+                    loadTheme();
                     ensureTrainingButton();
                     enforcePayrollAccess();
                 }, 5000);
@@ -111,6 +125,8 @@
         allowed: hasPayrollAccess,
         enforce: enforcePayrollAccess
     };
+
+    loadTheme();
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
     else start();
