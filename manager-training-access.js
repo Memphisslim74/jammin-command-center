@@ -6,14 +6,23 @@
     let interval = null;
 
     function loadTheme() {
-        if (window.JamminTheme || document.querySelector('script[data-jammin-theme]')) return;
+        if (!window.JamminTheme && !document.querySelector('script[data-jammin-theme]')) {
+            const script = document.createElement('script');
+            script.src = 'theme.js?v=20260805';
+            script.dataset.jamminTheme = 'true';
+            script.async = false;
+            script.onerror = () => console.error('The Command Center theme could not be loaded.');
+            document.head.appendChild(script);
+        }
 
-        const script = document.createElement('script');
-        script.src = 'theme.js?v=20260805';
-        script.dataset.jamminTheme = 'true';
-        script.async = false;
-        script.onerror = () => console.error('The Command Center theme could not be loaded.');
-        document.head.appendChild(script);
+        if (!document.querySelector('script[data-jammin-theme-polish]')) {
+            const polish = document.createElement('script');
+            polish.src = 'theme-polish.js?v=20260805-2';
+            polish.dataset.jamminThemePolish = 'true';
+            polish.async = false;
+            polish.onerror = () => console.error('The Command Center light-theme fixes could not be loaded.');
+            document.head.appendChild(polish);
+        }
     }
 
     function profile() {
