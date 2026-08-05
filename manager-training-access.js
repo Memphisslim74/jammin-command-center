@@ -23,6 +23,15 @@
             polish.onerror = () => console.error('The Command Center light-theme fixes could not be loaded.');
             document.head.appendChild(polish);
         }
+
+        if (!document.querySelector('script[data-jammin-user-card-light-fix]')) {
+            const userCardFix = document.createElement('script');
+            userCardFix.src = 'user-card-light-fix.js?v=20260805-1';
+            userCardFix.dataset.jamminUserCardLightFix = 'true';
+            userCardFix.async = false;
+            userCardFix.onerror = () => console.error('The People and Access light-theme fixes could not be loaded.');
+            document.head.appendChild(userCardFix);
+        }
     }
 
     function profile() {
